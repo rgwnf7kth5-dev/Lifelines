@@ -1,0 +1,1116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<title>Lifelines</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: night sky on the left (live 9:16 preview), people editor on the right; stacked on phones. One deliberate night look. */
+:root {
+  --night: #080a1c;
+  --panel: #11142c;
+  --panel-2: #181c3a;
+  --line: #2a2e55;
+  --ink: #ecebf7;
+  --muted: #9093b8;
+  --gold: #f4c46a;
+  --rose: #ff7d8e;
+  --display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --ui: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+html { min-height: 100%; background: var(--night); }
+body {
+  min-height: 100vh; margin: 0;
+  background: radial-gradient(1200px 700px at 20% -10%, #1a1840 0%, transparent 60%) fixed, var(--night);
+  color: var(--ink);
+  font: 15px/1.5 var(--ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+header { max-width: 1240px; margin: 0 auto 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h1 { font: 600 2.4rem/1 var(--display); margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 em { color: var(--gold); font-style: italic; font-weight: 500; }
+.lede { color: var(--muted); margin: 0; max-width: 62ch; }
+.app { max-width: 1240px; margin: 0 auto; display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 920px) { .app { grid-template-columns: minmax(0, 1fr) 470px; align-items: start; } .stage { position: sticky; top: max(16px, env(safe-area-inset-top, 0px)); } }
+.stage { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
+/* the preview is a player: play, scrub and the clock sit on its lower edge and step aside while it plays */
+.screen { position: relative; max-width: 100%; border-radius: 14px; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px #000; }
+canvas#sky { display: block; aspect-ratio: 9 / 16; height: min(calc(100vh - 215px), 1280px); max-width: 100%; border-radius: 14px; background: #070918; }
+.player { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 34px 14px 12px; border-radius: 0 0 14px 14px;
+  background: linear-gradient(rgba(5,6,20,0), rgba(5,6,20,.88) 55%); transition: opacity .35s; }
+.player input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: var(--gold); }
+.player .clock { color: #cfd0ec; font-size: 12px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+.player button { width: 40px; height: 40px; padding: 0; border-radius: 50%; display: grid; place-items: center; flex: none; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.18); font-size: 15px; }
+@media (hover: hover) { .screen.playing:not(:hover):not(:focus-within) .player { opacity: 0; } }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; width: min(100%, 540px); }
+.actions .primary { padding: 11px 22px; font-size: 15px; }
+@media (max-width: 919px) { .screen { width: min(100%, 460px); } canvas#sky { height: auto; width: 100%; } }
+.controls { display: flex; align-items: center; gap: 10px; width: min(100%, 540px); flex-wrap: wrap; }
+.controls input[type=range] { flex: 1 1 160px; min-width: 0; accent-color: var(--gold); }
+.clock { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+button { font: 500 14px var(--ui); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 8px 14px; cursor: pointer; }
+button:hover { border-color: #444a85; }
+button:focus-visible, input:focus-visible, select:focus-visible, .handle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button.primary { background: var(--gold); color: #1d1606; border-color: var(--gold); font-weight: 600; }
+button.primary:hover { filter: brightness(1.06); }
+button:disabled { opacity: .5; cursor: default; }
+.icon { padding: 5px 8px; line-height: 1; min-width: 30px; }
+.status { font-size: 13px; color: var(--muted); min-height: 1.4em; text-align: center; width: min(100%, 540px); }
+.status.ok { color: #8fe3b0; } .status.err { color: var(--rose); }
+video#preview { width: min(100%, 300px); border-radius: 10px; border: 1px solid var(--line); }
+
+.editor { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.editor h2 { font: 600 1.45rem/1.1 var(--display); margin: 0; }
+.editor h3 { font: 600 12px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.note { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+.sample { display: inline-block; font: 600 11px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); border: 1px solid #5a4a24; border-radius: 99px; padding: 1px 8px; margin-left: 6px; vertical-align: 3px; }
+.people { display: flex; flex-direction: column; gap: 8px; }
+.card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 10px 10px 6px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 6px; transition: box-shadow .15s; }
+.card > .body { display: grid; gap: 8px; min-width: 0; }
+.card.me { border-color: #6b5527; background: linear-gradient(#1f1d36, #1a1934); }
+.card.dragging { box-shadow: 0 0 0 2px var(--gold), 0 14px 30px -10px #000; position: relative; z-index: 2; }
+.handle { grid-row: 1 / span 2; align-self: stretch; display: grid; place-items: center; width: 22px; border-radius: 6px; color: #6b6f9c; cursor: grab; touch-action: none; user-select: none; font-size: 16px; }
+.handle:hover { color: var(--ink); background: #22264a; }
+.dragging .handle { cursor: grabbing; }
+.row { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.row > .grow { flex: 1 1 auto; min-width: 0; }
+.years { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+label.f { display: flex; flex-direction: column; gap: 2px; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); min-width: 0; }
+input[type=text], input[type=number], select { font: 14px var(--ui); color: var(--ink); background: #0c0e22; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%; min-width: 0; font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
+input::placeholder { color: #5d6088; }
+select.role { flex: 0 0 8.4rem; width: 8.4rem; }
+input[type=color] { width: 30px; height: 30px; padding: 0; border: none; background: none; cursor: pointer; flex: none; border-radius: 50%; }
+input[type=color]::-webkit-color-swatch-wrapper { padding: 3px; }
+input[type=color]::-webkit-color-swatch { border-radius: 50%; border: none; }
+input[type=color]::-moz-color-swatch { border-radius: 50%; border: none; }
+.swatch { position: relative; flex: none; display: flex; }
+.swatch .custom { position: absolute; right: -3px; top: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel-2); }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink); text-transform: none; letter-spacing: 0; }
+.check input { accent-color: var(--gold); width: 16px; height: 16px; }
+.section { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.palette label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.legend { font-size: 13px; color: var(--muted); display: grid; gap: 3px; margin: 0; padding-left: 18px; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.years.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.controls.viewer { justify-content: center; font-size: 13px; color: var(--muted); }
+.controls.viewer select { width: auto; max-width: 60%; }
+.viewer-note { text-align: center; width: min(100%, 540px); margin: -4px 0 0; }
+.viewer-note:empty { display: none; }
+.card { padding: 4px 8px 4px 4px; align-items: center; }
+.card.open { padding: 8px 10px 10px 4px; align-items: start; }
+.summary { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 12px minmax(0, 1fr) minmax(56px, 92px) auto 12px; gap: 10px; align-items: center; width: 100%; padding: 6px 2px; border-radius: 8px; }
+.summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.summary .dot { width: 12px; height: 12px; border-radius: 50%; }
+.summary .who { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.summary .who b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.summary .who small { color: var(--muted); font-size: 11.5px; }
+.summary .span { position: relative; height: 4px; border-radius: 2px; background: #262a52; }
+.summary .span i { position: absolute; top: 0; bottom: 0; border-radius: 2px; opacity: .9; }
+.summary .span em { position: absolute; top: -8px; transform: translateX(-50%); font: normal 10px var(--ui); color: #fff; }
+.summary .yrs { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.summary .chev { color: var(--muted); font-size: 18px; transition: transform .2s; text-align: center; }
+.card.open .summary .chev { transform: rotate(90deg); }
+.card.open .summary { border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; padding-bottom: 10px; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Life<em>lines</em></h1>
+  <p class="lede">Every colored line is one person in your life. Those who drift apart fade off to the side. Those who pass away rise into your sky as stars.</p>
+</header>
+
+<main class="app">
+  <section class="stage" aria-label="Animation preview">
+    <div class="controls viewer">
+      <label for="viewer">Whose story</label>
+      <select id="viewer"></select>
+    </div>
+    <p id="viewerNote" class="note viewer-note"></p>
+    <div class="screen" id="screen">
+      <canvas id="sky" width="720" height="1280"></canvas>
+      <div class="player">
+        <button id="play" type="button" aria-label="Play">▶</button>
+        <input id="scrub" type="range" min="-2" max="100" step="0.05" value="0" aria-label="Scrub through time">
+        <span id="clock" class="clock">age 0</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="record" class="primary" type="button">● Record video</button>
+      <button id="restart" type="button">↺ From the start</button>
+      <button id="music" type="button" aria-pressed="true">♪ Music on</button>
+    </div>
+    <div id="status" class="status" role="status"></div>
+    <video id="preview" controls playsinline hidden></video>
+  </section>
+
+  <aside class="editor" aria-label="People in the story">
+    <div>
+      <h2>People in your story <span class="sample">example</span></h2>
+      <p class="note">An example family. Replace it with your own people. Click a person to edit them. The list runs top to bottom = lines left to right; drag ⠿ to reorder.</p>
+    </div>
+    <div class="tools">
+      <button id="arrange" type="button">Arrange as family tree</button>
+    </div>
+    <div id="people" class="people"></div>
+    <div class="tools">
+      <button id="addParent" type="button">+ Parent</button>
+      <button id="addGrand" type="button">+ Grandparent</button>
+      <button id="addSibling" type="button">+ Sibling</button>
+      <button id="addPartner" type="button">+ Partner</button>
+      <button id="addChild" type="button">+ Child</button>
+      <button id="addFriend" type="button">+ Friend</button>
+    </div>
+    <ul class="legend">
+      <li><b>Joined</b>: the year they came into your life (empty = there from the start).</li>
+      <li><b>Left</b>: the year your paths parted. Their line drifts away.</li>
+      <li><b>Died</b>: they rise into the sky as a star.</li>
+      <li>A child's line grows out of both parents' lines. Pick the other parent under <b>Child with</b>.</li>
+      <li>Stars connect by kinship: children to both parents, partners to each other.</li>
+      <li><b>Whose story</b> (under the preview) tells the same family from anyone's point of view. Use real names so the labels work for everyone, and add birth years.</li>
+    </ul>
+    <div class="section">
+      <h3>Colors by relationship</h3>
+      <div id="palette" class="palette"></div>
+    </div>
+    <div class="section">
+      <label class="f">Speed (seconds per year) <span id="dur" style="text-transform:none;letter-spacing:0"></span>
+        <input id="speed" type="range" min="0.3" max="1.6" step="0.05" style="accent-color:var(--gold)">
+      </label>
+      <label class="check"><input type="checkbox" id="linger"> Slow down at big moments, speed through quiet years</label>
+      <label class="check"><input type="checkbox" id="captions"> Show captions for big moments (births, meetings, stars)</label>
+      <label class="check"><input type="checkbox" id="markFuture"> Show the years after today as imagined (dashed lines)</label>
+      <label class="f">Closing words<select id="closing"></select></label>
+      <label class="f">Closing title<input id="line1" type="text"></label>
+      <label class="f">Closing line<input id="line2" type="text"></label>
+      <button id="reset" type="button">Restore the example family</button>
+    </div>
+  </aside>
+</main>
+
+<script>
+(() => {
+const W = 720, H = 1280, NOW_Y = Math.round(H * 0.47), PPY = H * 0.052, T0 = -14, STEP = 0.02, TSTART = -2; // the video opens two years before you are born
+const VIS = (H - NOW_Y) / PPY + 0.5, LEAVE_YEARS = 2.6, CAP_YEARS = 2.2;
+const STORE = "lifelines-v2";
+const ROLES = { grandparent: "Grandparent", parent: "Parent", sibling: "Sibling", partner: "Partner", child: "Child", grandchild: "Grandchild", friend: "Friend", other: "Other" };
+const DEFAULT_COLORS = { me: "#ffc247", grandparent: "#b9a6ff", parent: "#ff6b7d", sibling: "#ff9f5a", partner: "#ff8fd8", child: "#3fd6e0", grandchild: "#a6c8ff", friend: "#5fd39a", other: "#c9b37a" };
+// generation of each relationship, counted from you (grandparents -2 ... grandchildren +2)
+const ROLE_GEN = { ancestor: -3, grandparent: -2, parent: -1, sibling: 0, partner: 0, me: 0, child: 1, grandchild: 2 };
+const FAMILY = ["grandparent", "parent", "sibling", "partner", "child", "grandchild"];
+const REL_LABEL = { me: "you", ancestor: "great-grandparent", relative: "relative", ...Object.fromEntries(Object.entries(ROLES).map(([k, v]) => [k, v.toLowerCase()])) };
+const NOW_YEAR = new Date().getFullYear();
+
+// ready-made closing words; the title and line stay editable
+const CLOSINGS = [
+  ["They went on ahead", "Into the sky we are slowly walking toward, they light the way for us."],
+  ["Life is a journey", "Some walk with you for a while. Others stay in your sky forever."],
+  ["Only a little ahead", "They have only gone a little ahead. We follow, one quiet step at a time."],
+  ["Walking on before us", "Those we love walk on before us, into the sky we are slowly walking toward."],
+  ["Ahead of us, not gone", "Waiting where every path leads."],
+  ["They walk on ahead", "Gone to the place where we are slowly following."]
+];
+const SAMPLE = () => ({
+  birth: 1985, end: 2070, meStar: true, secPerYear: 0.8, viewer: "me", linger: true, markFuture: true,
+  line1: CLOSINGS[0][0],
+  line2: CLOSINGS[0][1],
+  colors: { ...DEFAULT_COLORS },
+  people: [
+    { id: "p1", name: "Grandma Rose", role: "grandparent", of: "p3", born: 1931, from: "", to: "", death: 2000 },
+    { id: "p2", name: "Grandpa Joe", role: "grandparent", of: "p3", born: 1928, from: "", to: "", death: 1997 },
+    { id: "p3", name: "Helen", role: "parent", born: 1958, from: "", to: "", death: 2060 },
+    { id: "p4", name: "First love", role: "friend", from: 2002, to: 2004, death: "" },
+    { id: "p5", name: "Anna", role: "partner", born: 1987, from: 2010, to: "", death: 2066 },
+    { id: "p6", name: "Leo", role: "child", with: "p5", from: 2020, to: "", death: "" },
+    { id: "me", name: "Alex", role: "me" },
+    { id: "p7", name: "Childhood friend", role: "friend", from: 1990, to: 2032, death: "" },
+    { id: "p8", name: "Grade school friend", role: "friend", from: 1992, to: 1997, death: "" },
+    { id: "p9", name: "College friend", role: "friend", from: 2005, to: 2009, death: "" },
+    { id: "p10", name: "Coworker", role: "friend", from: 2011, to: 2014, death: "" },
+    { id: "p11", name: "Peter", role: "parent", born: 1956, from: "", to: "", death: 2040 }
+  ]
+});
+
+function loadState() {
+  try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && Array.isArray(s.people) && s.people.some(p => p.id === "me")) return s; } catch (e) {}
+  try { // carry over a list made in the first version
+    const o = JSON.parse(localStorage.getItem("hvezdna-cesta-v1"));
+    if (o && Array.isArray(o.people) && o.people.some(p => p.id === "me")) {
+      const s = SAMPLE();
+      return { ...s, birth: o.birth, end: o.end, meStar: o.meStar, secPerYear: o.secPerYear,
+        people: o.people.map(p => p.id === "me" ? { id: "me", name: p.name || "Me", role: "me" } : {
+          id: p.id, name: p.name, from: p.from, to: p.to, death: p.death,
+          role: p.role === "family" ? (/bab|d[ěe]d|grand|pra/i.test(p.name || "") ? "grandparent" : "parent") : (ROLES[p.role] ? p.role : "other") }) };
+    }
+  } catch (e) {}
+  return SAMPLE();
+}
+let S = loadState();
+S.colors = { ...DEFAULT_COLORS, ...(S.colors || {}) };
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} };
+const roleColor = r => S.colors[{ ancestor: "grandparent", relative: "other" }[r] || r] || "#ffffff";
+const colorOf = p => p.id === "me" ? S.colors.me : (p.color || roleColor(p.role));
+
+// ---------- helpers ----------
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+const hexA = (hex, a) => { const n = parseInt((hex || "#ffffff").slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+function hash(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15; return (h >>> 0) / 4294967295; }
+const num = v => { if (v === "" || v == null) return null; const n = +v; return Number.isFinite(n) ? n : null; };
+for (const p of S.people) if (p.role === "sibling" && num(p.born) == null && num(p.from) != null) { p.born = p.from; p.from = ""; } // siblings used "Joined" as their birth year before there was a Born field
+
+// ---------- family graph: who is whose parent and partner, so the story can be told from anyone's point of view ----------
+const by = r => S.people.filter(p => p.role === r);
+const gpParent = g => (by("parent").find(q => q.id === g.of) || by("parent")[0])?.id;
+const gcParent = g => (by("child").find(q => q.id === g.of) || by("child")[0])?.id;
+// the other parent of your child: the partner chosen on the card, else the partner you were with when the child was born
+function otherParent(c) {
+  if (c.with === "none") return null;
+  const ps = by("partner"), chosen = ps.find(q => q.id === c.with);
+  if (chosen) return chosen.id;
+  const y = num(c.from);
+  const active = ps.find(q => (num(q.from) ?? -1e9) <= (y ?? 1e9) && (num(q.to) ?? 1e9) >= (y ?? -1e9));
+  // nobody listed as together at the birth: the partner whose time with you starts closest to it, unless you had already parted
+  const near = ps.filter(q => (num(q.to) ?? 1e9) >= (y ?? -1e9)).sort((a, b) => Math.abs((num(a.from) ?? -1e9) - (y ?? 0)) - Math.abs((num(b.from) ?? -1e9) - (y ?? 0)))[0];
+  return (active || near)?.id ?? null;
+}
+function familyGraph() {
+  const b = num(S.birth) ?? 1985, N = new Map(), P = [];
+  for (const p of S.people) if (p.id === "me" || FAMILY.includes(p.role)) N.set(p.id, { p, par: [], gen: ROLE_GEN[p.id === "me" ? "me" : p.role] });
+  const parents = by("parent").map(q => q.id);
+  for (const [id, n] of N) {
+    const r = id === "me" ? "me" : n.p.role;
+    if (r === "me" || r === "sibling") n.par = parents.slice();
+    else if (r === "parent") n.par = by("grandparent").filter(g => gpParent(g) === id).map(g => g.id);
+    else if (r === "child") n.par = ["me", otherParent(n.p)].filter(Boolean);
+    else if (r === "grandchild") n.par = [gcParent(n.p)].filter(Boolean);
+    if (r === "partner") P.push({ a: "me", b: id, from: num(n.p.from), to: num(n.p.to) });
+  }
+  for (const n of N.values()) if (n.par.length === 2 && !P.some(r => (r.a === n.par[0] && r.b === n.par[1]) || (r.a === n.par[1] && r.b === n.par[0])))
+    P.push({ a: n.par[0], b: n.par[1], from: null, to: null }); // two people who share a child are a couple
+  // both parents are already together on screen when their child is born: the couple's line joins at least 2 years before
+  for (const n of N.values()) {
+    const y = num(n.p.from); if (n.par.length !== 2 || y == null || !["child", "grandchild"].includes(n.p.role)) continue;
+    const r = P.find(r => (r.a === n.par[0] && r.b === n.par[1]) || (r.a === n.par[1] && r.b === n.par[0]));
+    if (r && r.from != null && r.from > y - 2) r.from = y - 2;
+  }
+  const bornOf = id => {
+    const n = N.get(id); if (!n) return null;
+    if (id === "me") return b;
+    const r = n.p.role, y = num(n.p.born) ?? (r === "child" || r === "grandchild" ? num(n.p.from) : null);
+    return y ?? b + n.gen * 28;
+  };
+  const known = id => id === "me" || num(N.get(id)?.p.born) != null || ((N.get(id)?.p.role === "child" || N.get(id)?.p.role === "grandchild") && num(N.get(id).p.from) != null);
+  return { N, P, bornOf, known };
+}
+
+// everyone who appears in the story told from `vid`'s point of view, with years relative to that person
+function buildView() {
+  const G = familyGraph(), vid = G.N.has(S.viewer) ? S.viewer : "me", X = G.N.get(vid);
+  const par = id => G.N.get(id)?.par || [];
+  const sibGroup = id => id === "me" || G.N.get(id)?.p.role === "sibling";
+  const birth = G.bornOf(vid);
+  const cast = [];
+  if (vid === "me") {
+    const b = birth;
+    for (const p of S.people) {
+      const isMe = p.id === "me", g = G.N.get(p.id);
+      const from = p.role === "sibling" ? (() => { const y = num(p.born); return y != null && y > b ? y : null; })()
+        : p.role === "partner" ? G.P.find(r => r.a === "me" && r.b === p.id).from : num(p.from);
+      cast.push({ id: p.id, p, role: isMe ? "me" : p.role, of: p.of, from, to: isMe ? null : num(p.to), death: isMe ? null : num(p.death), par: g ? g.par : [], gen: g ? g.gen : null });
+    }
+  } else {
+    for (const [id, n] of G.N) {
+      let role, of = null, from = null, to = null;
+      const pr = G.P.find(r => (r.a === vid && r.b === id) || (r.b === vid && r.a === id));
+      if (id === vid) role = "me";
+      else if (par(vid).includes(id)) role = "parent";
+      else if ((of = par(vid).find(q => par(q).includes(id)))) role = "grandparent";
+      else if ((of = par(vid).flatMap(par).find(q => par(q).includes(id)))) role = "ancestor";
+      else if (par(id).includes(vid)) role = "child";
+      else if ((of = par(id).find(k => par(k).includes(vid)))) role = "grandchild";
+      else if (pr) { role = "partner"; from = pr.from; to = pr.to; }
+      else if (par(id).some(q => par(vid).includes(q)) || (sibGroup(id) && sibGroup(vid))) role = "sibling";
+      else role = "relative";
+      const bornY = G.bornOf(id);
+      if (role !== "me" && role !== "partner" && bornY > birth) from = bornY;
+      const death = id === vid ? null : id === "me" ? (S.meStar ? num(S.end) : null) : num(n.p.death);
+      cast.push({ id, p: n.p, role, of: of || null, from, to, death, par: n.par, gen: n.gen });
+    }
+  }
+  for (const c of cast) {
+    c.name = (c.p.name || "").trim() || (c.role === "me" ? "Me" : "?");
+    c.color = c.role === "me" ? S.colors.me : (c.p.color || roleColor(c.role));
+  }
+  const ordered = vid === "me" ? cast : arrangeOrder(cast);
+  const ids = new Set(cast.map(c => c.id));
+  const edges = [];
+  for (const c of cast) for (const q of c.par) if (ids.has(q)) edges.push([c.id, q]);
+  for (const r of G.P) if (ids.has(r.a) && ids.has(r.b) && !edges.some(([x, y]) => (x === r.a && y === r.b) || (x === r.b && y === r.a))) edges.push([r.a, r.b]);
+  // your own end: the year you set for yourself, or your death year, or 85 years
+  let endY, meStar;
+  if (vid === "me") { endY = num(S.end) ?? birth + 85; meStar = !!S.meStar; }
+  else { const d = num(X.p.death); endY = d ?? birth + 85; meStar = d != null || !!S.meStar; }
+  const endAge = Math.max(5, endY - birth);
+  // moments the clock lingers on: births, partings, deaths
+  const events = [[0, .8], [endAge, 1]];
+  for (const c of ordered) {
+    if (c.role === "me") continue;
+    if (c.from != null && c.from - birth > 0) events.push([c.from - birth, .75]);
+    if (c.to != null && c.to - birth > 0) events.push([c.to - birth, .5]);
+    if (c.death != null && c.death - birth > 0) events.push([c.death - birth, 1]);
+  }
+  return { vid, cast: ordered, edges, birth, endAge, meStar, aNow: NOW_YEAR - birth, events, estimated: !G.known(vid), endFromDeath: vid !== "me" && num(X.p.death) != null };
+}
+let VIEW = null;
+const view = () => VIEW || (VIEW = buildView());
+const meEnd = () => view().endAge;
+const tEnd = () => meEnd() + 9;
+
+// how many times slower than the base speed the clock runs at story time t
+function paceAt(t) {
+  const V = view();
+  if (S.linger === false) return 1;
+  if (t >= V.endAge) { const u = (t - V.endAge) / 1.1; return 1 + .8 * Math.exp(-u * u); }
+  let w = 0;
+  for (const [te, k] of V.events) { const d = (t - te) / 1.1; if (d > -3 && d < 3) w += k * Math.exp(-d * d); }
+  return .55 + 1.25 * Math.min(1, w);
+}
+function videoSeconds() {
+  const sp = clamp(+S.secPerYear || .8, .2, 3); let s = 0;
+  for (let x = TSTART; x < tEnd(); x += .05) s += .05 * sp * paceAt(x);
+  return s;
+}
+
+// family-tree order: first parent's line of ancestors, first parent, partner, children, you, siblings, friends, second parent, their ancestors
+function arrangeOrder(list) {
+  const of = r => list.filter(p => p.role === r);
+  const parents = of("parent"), A = parents[0], B = parents[1];
+  const anc = g => of("ancestor").filter(a => a.of === g.id);
+  const gpOf = par => par ? of("grandparent").filter(g => (g.of || (g.p ? null : gpParent(g)) || parents[0]?.id) === par.id) : [];
+  const kidsFirst = of("child")[0]?.id;
+  const kids = of("child").flatMap(c => [c, ...of("grandchild").filter(g => (g.of || kidsFirst) === c.id)]);
+  const order = [...gpOf(A).flatMap(g => [...anc(g), g]), A, ...parents.slice(2), ...of("partner"), ...kids, list.find(p => p.role === "me" || p.id === "me"),
+    ...of("sibling"), ...of("relative"), ...of("friend"), ...of("other"), B, ...gpOf(B).flatMap(g => [g, ...anc(g)])].filter(Boolean);
+  return [...new Set([...order, ...list])];
+}
+
+// ---------- simulation ----------
+function makeSim() {
+  const V = view(), b = V.birth, end = V.endAge;
+  const yr = n => n == null ? null : n - b;
+  const meOrder = V.cast.findIndex(c => c.role === "me");
+  const ents = V.cast.map((c, i) => {
+    const isMe = c.role === "me";
+    let a0 = isMe ? 0 : yr(c.from); if (a0 == null) a0 = -Infinity;
+    return {
+      id: c.id, of: c.of, isMe, order: i, name: c.name, color: c.color, par: c.par, gen: c.gen,
+      role: c.role, a0, aLeave: isMe ? null : yr(c.to), aDeath: isMe ? (V.meStar ? end : null) : yr(c.death),
+      seed: hash(c.id) * 100, spawned: false, x: W / 2, v: 0, ht: [], hx: [], hf: [], leaving: false, done: false, dead: false
+    };
+  });
+  const byId = new Map(ents.map(e => [e.id, e]));
+  for (const e of ents) e.parents = e.par.map(id => byId.get(id)).filter(Boolean);
+  const meGen = ents[meOrder].gen ?? 0;
+  for (const e of ents) e.band = e.gen == null ? null : clamp(e.gen - meGen + 3, 0, 6);
+  const sim = { ents, end, t: T0, stars: [], me: ents[meOrder], edges: V.edges, aNow: V.aNow, captions: [] };
+  const cap = (a, e, text) => { if (a != null && a >= TSTART && a < end) sim.captions.push({ t: a, year: String(Math.floor(b + a)), text, color: e.color }); };
+  for (const e of ents) {
+    if (e.isMe) { cap(0, e, `${e.name} is born`); continue; }
+    if (e.a0 > 0 && ["child", "grandchild", "sibling", "relative"].includes(e.role)) cap(e.a0, e, `${e.name} is born`);
+    if (e.a0 > 0 && e.role === "partner") cap(e.a0, e, `Meeting ${e.name}`);
+    if (e.role === "partner") cap(e.aLeave, e, `Parting ways with ${e.name}`);
+    cap(e.aDeath, e, `${e.name} becomes a star`);
+  }
+  sim.captions.sort((p, q) => p.t - q.t);
+  for (const e of ents) {
+    if (e.aDeath != null && e.aDeath <= T0) { e.dead = true; addStar(sim, e, W / 2 + (e.order - meOrder) * 60, -1e6); }
+    else if (e.aLeave != null && e.aLeave <= T0) e.done = true;
+  }
+  return sim;
+}
+const wig = (e, t) => 2.6 * Math.sin(t * 1.6 + e.seed) + 1.4 * Math.sin(t * 3.3 + e.seed * 1.7);
+const lastX = e => e.hx.length ? e.hx[e.hx.length - 1] : e.x;
+
+function addStar(sim, e, x, t, quiet) {
+  const gen = e.band;
+  // a star needs room for itself and its name, which is drawn to its right
+  const free = c => sim.stars.every(s => Math.abs(s.y - c.y) > 44 || (c.x < s.x ? s.x - c.x > 30 + 8 * c.e.name.length : c.x - s.x > 30 + 8 * s.e.name.length));
+  const y0 = gen != null ? H * (0.05 + gen * 0.064) + (hash(e.id + "j") - .5) * 26 : H * (0.05 + hash(e.id + "y") * 0.33);
+  const x0 = clamp(x, 60, W - 150);
+  let best = null;
+  for (let row = 0; row < 4 && !best; row++) {
+    const y = y0 + (row % 2 ? 1 : -1) * Math.ceil(row / 2) * 48;
+    for (let i = 0; i < 14 && !best; i++) {
+      const c = { e, x: clamp(x0 + Math.ceil(i / 2) * 60 * (i % 2 ? 1 : -1), 40, W - 40 - 8 * e.name.length), y };
+      if (free(c)) best = c;
+    }
+  }
+  best = best || { x: x0, y: y0 };
+  sim.stars.push({ e, x: best.x, y: best.y, t0: t, fx: x, quiet });
+}
+
+function step(sim, h) {
+  const t = sim.t + h; sim.t = t;
+  const live = e => !e.dead && !e.done && !e.leaving && t >= e.a0 && !(e.aLeave != null && t >= e.aLeave) && !(e.aDeath != null && t >= e.aDeath);
+  const act = sim.ents.filter(live);
+  const n = act.length, gap = Math.min(74, W * 0.72 / Math.max(1, n - 1)), x0 = W / 2 - gap * (n - 1) / 2;
+  const slot = new Map(act.map((e, i) => [e, x0 + i * gap]));
+  const me = sim.me, meX = me.spawned && !me.dead ? me.x : W / 2;
+  for (const e of sim.ents) {
+    if (e.done && !e.dead && e.aDeath != null && t >= e.aDeath) { e.dead = true; addStar(sim, e, clamp(lastX(e), 40, W - 40), t, true); }
+    if (e.dead || e.done) continue;
+    if (!e.spawned) {
+      if (!slot.has(e)) continue;
+      e.spawned = true;
+      // someone born during the story grows out of the lines of both their parents
+      const ps = e.a0 > T0 ? e.parents.filter(q => q.spawned && !q.dead && !q.done && !q.leaving && q.hx.length) : [];
+      if (ps.length) { e.x = ps.reduce((s, q) => s + q.x, 0) / ps.length; e.fork = ps; }
+      else if (e.a0 === -Infinity || e.isMe) e.x = slot.get(e);
+      else if (e.role === "child" || e.role === "grandchild") e.x = meX;
+      else { e.x = slot.get(e) + (e.order < me.order ? -140 : 140); e.fadeIn = t; } // newcomers glide in from close by and fade in
+    }
+    if (e.aDeath != null && t >= e.aDeath) { e.dead = true; addStar(sim, e, lastX(e), t); continue; }
+    // someone leaving steps a little aside and fades out, instead of sweeping across the whole sky
+    if (!e.leaving && e.aLeave != null && t >= e.aLeave) { e.leaving = true; e.leaveT = t; e.dir = e.x < meX ? -1 : 1; e.leaveTo = e.x + e.dir * 150; e.leaveIdx = e.ht.length; }
+    // critically damped spring: velocity never jumps, so lines bend smoothly
+    const target = e.leaving ? e.leaveTo : slot.get(e);
+    const om = e.leaving ? 1.3 : 2.2;
+    e.v += (om * om * (target - e.x) - 2 * om * e.v) * h;
+    e.x += e.v * h;
+    const fadeLeft = e.leaving ? clamp(1 - (t - e.leaveT) / LEAVE_YEARS, 0, 1) : 1;
+    const fadeIn = e.fadeIn != null ? clamp((t - e.fadeIn) / 1.4, 0, 1) : 1;
+    if (e.solidFrom == null && fadeIn >= 1) e.solidFrom = e.ht.length;
+    if (e.leaving && fadeLeft <= 0) e.done = true;
+    e.ht.push(t); e.hx.push(e.x + wig(e, t)); e.hf.push(Math.min(fadeLeft, fadeIn));
+  }
+}
+
+let sim = null;
+function simTo(t) {
+  if (!sim || t < sim.t - 1e-6) sim = makeSim();
+  while (sim.t + STEP <= t) step(sim, STEP);
+}
+
+// ---------- drawing ----------
+const cv = document.getElementById("sky"), ctx = cv.getContext("2d");
+const bg = document.createElement("canvas"); bg.width = W; bg.height = H;
+const field = document.createElement("canvas"); field.width = W; field.height = H;
+const twinkles = [];
+(function paintBackdrop() {
+  const g = bg.getContext("2d");
+  const lin = g.createLinearGradient(0, 0, 0, H);
+  lin.addColorStop(0, "#0a0b22"); lin.addColorStop(.45, "#0e1030"); lin.addColorStop(1, "#06071a");
+  g.fillStyle = lin; g.fillRect(0, 0, W, H);
+  for (const [x, y, r, c] of [[W * .2, H * .12, 420, "rgba(90,70,170,.20)"], [W * .85, H * .3, 380, "rgba(60,80,170,.16)"], [W * .5, H * .78, 520, "rgba(70,50,130,.12)"]]) {
+    const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, c); rg.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  }
+  const f = field.getContext("2d");
+  let seed = 7;
+  const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let z = Math.imul(seed ^ seed >>> 15, 1 | seed); z = z + Math.imul(z ^ z >>> 7, 61 | z) ^ z; return ((z ^ z >>> 14) >>> 0) / 4294967296; };
+  for (let i = 0; i < 340; i++) {
+    const x = rnd() * W, y = rnd() * H, r = .3 + Math.pow(rnd(), 3) * 1.3;
+    f.fillStyle = `rgba(210,215,255,${.15 + rnd() * .5})`;
+    f.beginPath(); f.arc(x, y, r, 0, 7); f.fill();
+    if (i % 12 === 0) twinkles.push({ x, y, ph: rnd() * 6.28 });
+  }
+})();
+
+function glow(x, y, r, color, a) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, hexA(color, a)); g.addColorStop(1, hexA(color, 0));
+  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+}
+function sparkle(x, y, r, color, a) {
+  glow(x, y, r * 6, color, .28 * a);
+  ctx.strokeStyle = hexA("#ffffff", .6 * a); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r * 3, y); ctx.lineTo(x + r * 3, y); ctx.moveTo(x, y - r * 3); ctx.lineTo(x, y + r * 3); ctx.stroke();
+  ctx.fillStyle = hexA("#ffffff", a); ctx.beginPath(); ctx.arc(x, y, r * .7, 0, 7); ctx.fill();
+}
+// your own star: the brightest thing in the sky
+function myStar(x, y, s, a, now) {
+  const pulse = 1 + .07 * Math.sin(now / 650);
+  glow(x, y, 190 * s * pulse, "#ff9f40", .30 * a);
+  glow(x, y, 80 * s, "#ffd27a", .65 * a);
+  glow(x, y, 26 * s, "#fff4d6", .95 * a);
+  ctx.save(); ctx.translate(x, y); ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 8; i++) {
+    const L = (i % 2 ? 38 : 96) * s * pulse, w = i % 2 ? 1.4 : 2.2;
+    const g = ctx.createLinearGradient(0, 0, L, 0);
+    g.addColorStop(0, `rgba(255,244,214,${.95 * a})`); g.addColorStop(1, "rgba(255,190,110,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, -w); ctx.lineTo(L, 0); ctx.lineTo(0, w); ctx.fill();
+    ctx.rotate(Math.PI / 4);
+  }
+  ctx.restore();
+  ctx.fillStyle = hexA("#ffffff", a); ctx.beginPath(); ctx.arc(x, y, 5.5 * s, 0, 7); ctx.fill();
+}
+
+const firstAtOrAfter = (ht, a) => { let lo = 0, hi = ht.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ht[m] < a) lo = m + 1; else hi = m; } return lo; };
+const xAt = (e, a) => e.hx[Math.min(e.hx.length - 1, firstAtOrAfter(e.ht, a))];
+const fade = y => clamp(1 - (y - NOW_Y) / (H - NOW_Y), 0, 1);
+// years after today are imagined: drawn as a fainter dashed line whose dashes travel with time
+// line weight by closeness: you strongest, family solid, friends lighter
+const WEIGHT = { me: 1.55, relative: .8, friend: .62, other: .62 };
+const weightOf = e => WEIGHT[e.role] ?? 1;
+function strokeLine(future, t, w = 1, a = 1) {
+  const soft = w < 1 ? .55 + .45 * w : 1;
+  if (future) {
+    ctx.setLineDash([7, 7]); ctx.lineDashOffset = -t * PPY;
+    ctx.globalAlpha = .7 * soft * a; ctx.lineWidth = 1.8 * Math.min(w, 1.2); ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    ctx.globalAlpha = (w > 1 ? .24 : .16) * soft * a; ctx.lineWidth = 8 * w; ctx.stroke();
+    ctx.globalAlpha = soft * a; ctx.lineWidth = 2.2 * w; ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawTrail(e, t) {
+  const ht = e.ht, hx = e.hx; if (ht.length < 2) return;
+  const lo = firstAtOrAfter(ht, t - VIS);
+  if (lo >= ht.length - 1) return;
+  const w = weightOf(e);
+  const g = ctx.createLinearGradient(0, NOW_Y, 0, H);
+  g.addColorStop(0, hexA(e.color, 1)); g.addColorStop(.5, hexA(e.color, .55)); g.addColorStop(1, hexA(e.color, 0));
+  ctx.strokeStyle = g; ctx.lineJoin = "round"; ctx.lineCap = "round";
+  const aNow = S.markFuture === false ? Infinity : sim.aNow;
+  const yOf = j => NOW_Y + (t - ht[j]) * PPY;
+  // the part after someone left fades out segment by segment
+  const seg = (a, z) => {
+    for (let j = a; j < z; j += 2) {
+      const f = e.hf[j]; if (f <= .01) continue;
+      ctx.beginPath(); ctx.moveTo(hx[j], yOf(j)); ctx.lineTo(hx[Math.min(j + 2, z)], yOf(Math.min(j + 2, z)));
+      strokeLine(false, t, w * (.4 + .6 * f), f * f * (ht[j] > aNow ? .6 : 1));
+    }
+  };
+  const last = e.leaveIdx != null ? Math.min(e.leaveIdx, ht.length - 1) : ht.length - 1;
+  const first = Math.max(lo, Math.min(e.solidFrom ?? 0, last)); // before this a newcomer was still fading in
+  if (first > lo) seg(lo, first);
+  if (last < ht.length - 1) seg(Math.max(last, lo), ht.length - 1);
+  if (last <= first) return;
+  const split = Math.max(first, Math.min(last, firstAtOrAfter(ht, aNow))); // first point after today
+  const path = (from, to) => { ctx.beginPath(); for (let j = from; j >= to; j -= 2) { const y = yOf(j); j === from ? ctx.moveTo(hx[j], y) : ctx.lineTo(hx[j], y); } if ((from - to) % 2) ctx.lineTo(hx[to], yOf(to)); };
+  if (ht[last] > aNow) { path(last, Math.max(first, split - 1)); strokeLine(true, t, w); }
+  if (split > first) { path(Math.min(split, last), first); strokeLine(false, t, w); }
+  if (e.fork) {
+    const tb = ht[0], y0 = NOW_Y + (t - tb) * PPY, back = .9, y1 = y0 + back * PPY;
+    if (y0 > H + 40) return;
+    for (const q of e.fork) {
+      const px = xAt(q, tb - back), cx = hx[0], fg = ctx.createLinearGradient(0, y1, 0, y0);
+      fg.addColorStop(0, hexA(q.color, fade(y1))); fg.addColorStop(1, hexA(e.color, fade(y0)));
+      ctx.strokeStyle = fg; ctx.beginPath(); ctx.moveTo(px, y1);
+      ctx.bezierCurveTo(px, y1 - back * PPY * .55, cx, y0 + back * PPY * .45, cx, y0);
+      strokeLine(tb > aNow, t, w);
+    }
+  }
+}
+
+function wrapText(text, maxW) {
+  const words = text.split(/\s+/), lines = []; let cur = "";
+  for (const w of words) { const test = cur ? cur + " " + w : w; if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; } else cur = test; }
+  if (cur) lines.push(cur); return lines;
+}
+
+// where a star is drawn right now (rising from its line into the sky)
+function starPos(s, t) {
+  if (s.quiet) return { phase: "rise", p: clamp((t - s.t0) / 1.6, 0, 1), x: s.x, y: s.y };
+  const big = s.e.isMe, delay = big ? 1.2 : .15, rise = big ? 1.4 : 1.1, dt = t - s.t0;
+  if (dt < delay) return { phase: "flash", k: dt / delay, x: s.fx, y: NOW_Y };
+  const p = clamp((dt - delay) / rise, 0, 1), q = ease(p);
+  return { phase: "rise", p, x: s.fx + (s.x - s.fx) * q, y: NOW_Y + (s.y - NOW_Y) * q };
+}
+
+function draw(t, now) {
+  const end = sim.end, u = t - end;
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+  ctx.drawImage(bg, 0, 0);
+  const off = ((t * PPY * 0.08) % H + H) % H;
+  ctx.drawImage(field, 0, off - H); ctx.drawImage(field, 0, off);
+  for (const s of twinkles) { const a = .5 + .5 * Math.sin(now / 900 + s.ph); glow(s.x, (s.y + off) % H, 5, "#dfe3ff", .5 * a); }
+
+  // age axis
+  const axisA = clamp(1 - u / 2, 0, 1);
+  // ages after today slowly dissolve, so the video never tells when the story will end
+  const unknown = a => clamp(1 - (a - sim.aNow) / 2.5, 0, 1);
+  if (axisA > 0) {
+    ctx.font = "500 12px 'Instrument Sans', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    for (let a = Math.ceil((t - VIS) / 5) * 5; a <= t + NOW_Y / PPY; a += 5) {
+      if (a < 0 || a > end || unknown(a) <= 0) continue;
+      const y = NOW_Y + (t - a) * PPY;
+      ctx.fillStyle = `rgba(150,155,200,${.35 * axisA * unknown(a)})`; ctx.fillText(a, 10, y);
+      ctx.fillRect(30, y, 6, 1);
+    }
+    ctx.strokeStyle = `rgba(150,155,200,${.08 * axisA})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(33, 0); ctx.lineTo(33, H); ctx.stroke();
+    ctx.fillStyle = hexA("#f4c46a", axisA * unknown(t)); ctx.font = "600 14px 'Instrument Sans', sans-serif";
+    if (t >= 0) ctx.fillText(Math.floor(t), 8, NOW_Y);
+    ctx.fillStyle = hexA("#f4c46a", axisA); ctx.beginPath(); ctx.arc(38, NOW_Y, 2, 0, 7); ctx.fill();
+    // today: a faint line that slides down once the story passes it, and an "imagined" tag from then on
+    const aNow = sim.aNow;
+    if (S.markFuture !== false && t > aNow && aNow < end) {
+      const y = NOW_Y + (t - aNow) * PPY;
+      if (aNow > 0 && y < H) {
+        const a = axisA * fade(y) * .55;
+        ctx.strokeStyle = `rgba(244,196,106,${a})`; ctx.setLineDash([2, 6]); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(W - 12, y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.font = "500 12px 'Instrument Sans', sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = `rgba(244,196,106,${a * 1.4})`;
+        ctx.fillText(`today · ${NOW_YEAR}`, W - 14, y - 9); ctx.textAlign = "left";
+      }
+      ctx.font = "italic 500 15px 'Cormorant Garamond', Georgia, serif"; ctx.fillStyle = `rgba(200,198,235,${.75 * axisA * clamp((t - aNow) * 2, 0, 1)})`;
+      ctx.fillText("imagined", 8, NOW_Y + 20);
+    }
+  }
+
+  // trails
+  ctx.globalCompositeOperation = "lighter";
+  for (const e of sim.ents) drawTrail(e, t);
+  ctx.globalCompositeOperation = "source-over";
+
+  // constellation by kinship, revealed outward from your own star
+  const cProg = clamp((u - 2.6) / 2.6, 0, 1);
+  if (cProg > 0) {
+    const byId = new Map(sim.stars.map(s => [s.e.id, s]));
+    const pairs = sim.edges.filter(([a, b]) => byId.has(a) && byId.has(b));
+    const ordered = [], seen = new Set([sim.me.id]), queue = [sim.me.id], left = pairs.slice();
+    while (left.length) {
+      const id = queue.shift();
+      if (id == null) { const [a] = left[0]; seen.add(a); queue.push(a); continue; }
+      for (let i = left.length - 1; i >= 0; i--) {
+        const [a, b] = left[i];
+        if (a === id || b === id) { const other = a === id ? b : a; ordered.push([byId.get(id), byId.get(other)]); left.splice(i, 1); if (!seen.has(other)) { seen.add(other); queue.push(other); } }
+      }
+    }
+    const upto = cProg * ordered.length;
+    ctx.strokeStyle = "rgba(225,222,255,.5)"; ctx.lineWidth = 1.2; ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ordered.forEach(([a, c], i) => {
+      const f = clamp(upto - i, 0, 1); if (f <= 0) return;
+      const pa = starPos(a, t), pc = starPos(c, t);
+      ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x + (pc.x - pa.x) * f, pa.y + (pc.y - pa.y) * f);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // memory threads: a faint light from each star down to the kin still living, stronger from your own star once you are gone
+  {
+    const starOf = new Map(sim.stars.map(s => [s.e.id, s]));
+    const alive = new Map(sim.ents.filter(e => e.spawned && !e.dead && !e.done && !e.leaving && e.hx.length).map(e => [e.id, e]));
+    ctx.globalCompositeOperation = "lighter"; ctx.lineWidth = 1.2;
+    for (const [a, b] of sim.edges) {
+      const s = starOf.get(a) || starOf.get(b), h = alive.get(starOf.has(a) ? b : a);
+      if (!s || !h || t < s.t0) continue;
+      const pos = starPos(s, t); if (pos.phase !== "rise") continue;
+      const mine = s.e.isMe, hx0 = lastX(h);
+      const a0 = (mine ? .42 : .16) * ease(pos.p) * (.8 + .2 * Math.sin(now / 1100 + s.e.seed + h.seed)) * (1 - clamp((u - 3.6) / 1.6, 0, 1) * .5);
+      const cx = (pos.x + hx0) / 2, cy = pos.y + (NOW_Y - pos.y) * .72;
+      const g = ctx.createLinearGradient(pos.x, pos.y, hx0, NOW_Y);
+      g.addColorStop(0, hexA(s.e.color, a0)); g.addColorStop(1, hexA(h.color, a0 * .8));
+      ctx.strokeStyle = g; ctx.beginPath(); ctx.moveTo(pos.x, pos.y); ctx.quadraticCurveTo(cx, cy, hx0, NOW_Y - 6); ctx.stroke();
+      if (mine) { // a small light travels down each of your threads
+        const k = ((now / 5200 + h.seed) % 1), m = 1 - k;
+        glow(m * m * pos.x + 2 * m * k * cx + k * k * hx0, m * m * pos.y + 2 * m * k * cy + k * k * (NOW_Y - 6), 9, "#ffe2a8", a0 * 1.6 * Math.sin(k * Math.PI));
+      }
+    }
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  // stars
+  ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  for (const s of sim.stars) {
+    if (t < s.t0) continue;
+    const big = s.e.isMe, pos = starPos(s, t), tw = .85 + .15 * Math.sin(now / 700 + s.e.seed);
+    if (pos.phase === "flash") {
+      if (big) myStar(pos.x, pos.y, .4 + .8 * pos.k, 1, now);
+      else glow(pos.x, pos.y, 40 * Math.sin(pos.k * Math.PI * .8 + .3), s.e.color, .8);
+      continue;
+    }
+    if (pos.p < 1 && !s.quiet) {
+      ctx.strokeStyle = hexA(s.e.color, .25 * (1 - pos.p)); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(s.fx, NOW_Y); ctx.lineTo(pos.x, pos.y); ctx.stroke();
+    }
+    if (big) {
+      myStar(pos.x, pos.y, 1.2 - .45 * ease(pos.p), 1, now);
+      ctx.font = "600 20px 'Instrument Sans', sans-serif"; ctx.fillStyle = hexA("#ffd27a", pos.p);
+      ctx.fillText(s.e.name, pos.x + 22, pos.y + 26);
+    } else {
+      const qa = s.quiet ? .75 * pos.p : 1;
+      sparkle(pos.x, pos.y, 2.3 * (pos.p < 1 && !s.quiet ? 1.3 : 1), s.e.color, tw * .9 * qa);
+      ctx.font = "500 14px 'Instrument Sans', sans-serif"; ctx.fillStyle = hexA("#e9e6ff", .8 * pos.p * (s.quiet ? .85 : 1));
+      ctx.fillText(s.e.name, pos.x + 13, pos.y);
+    }
+  }
+
+  // heads + labels
+  const heads = sim.ents.filter(e => e.spawned && !e.dead && !e.done && e.hx.length).map(e => ({ e, x: lastX(e), a: e.hf[e.hf.length - 1] ?? 1 })).sort((a, b) => a.x - b.x);
+  ctx.font = "600 14px 'Instrument Sans', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  const placed = [];
+  for (const h of heads) {
+    const k = weightOf(h.e), a = h.a * (k < 1 ? .75 : 1);
+    glow(h.x, NOW_Y, (h.e.isMe ? 26 : 16) * Math.min(k, 1.2), h.e.color, .9 * a);
+    ctx.fillStyle = hexA("#ffffff", a); ctx.beginPath(); ctx.arc(h.x, NOW_Y, h.e.isMe ? 3.8 : 3 * Math.max(k, .8), 0, 7); ctx.fill();
+    if (h.a < .35) continue;
+    const w = ctx.measureText(h.e.name).width, lx = clamp(h.x, w / 2 + 40, W - w / 2 - 8);
+    let lvl = 0;
+    while (placed.some(p => p.lvl === lvl && Math.abs(p.x - lx) < (p.w + w) / 2 + 6) && lvl < 3) lvl++;
+    placed.push({ x: lx, w, lvl });
+    ctx.fillStyle = h.e.isMe ? hexA("#ffd27a", a) : hexA(h.e.color, .95 * a);
+    ctx.fillText(h.e.name, lx, NOW_Y - 14 - lvl * 17);
+  }
+
+  // captions for the big moments, like subtitles at the foot of the sky
+  if (S.captions !== false) {
+    const on = sim.captions.filter(c => t >= c.t - .15 && t < c.t + CAP_YEARS).slice(-2);
+    on.forEach((c, i) => {
+      const k = t - c.t, a = clamp((k + .15) / .4, 0, 1) * clamp((CAP_YEARS - k) / .6, 0, 1) * clamp(1 - u / 1.5, 0, 1);
+      if (a <= 0) return;
+      const y = H - 250 + (i - on.length + 1) * 74;
+      const sh = ctx.createRadialGradient(W / 2, y, 0, W / 2, y, W * .42);
+      sh.addColorStop(0, `rgba(6,7,24,${.7 * a})`); sh.addColorStop(1, "rgba(6,7,24,0)");
+      ctx.save(); ctx.scale(1, .32); ctx.fillStyle = sh; ctx.fillRect(0, (y - W * .42) / .32, W, W * .84 / .32); ctx.restore();
+      ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+      ctx.font = "600 13px 'Instrument Sans', sans-serif"; ctx.fillStyle = hexA(c.color, .95 * a);
+      if (c.t <= sim.aNow) ctx.fillText(c.year.split("").join(String.fromCharCode(8202)), W / 2, y - 22);
+      ctx.font = "500 36px 'Cormorant Garamond', Georgia, serif"; ctx.fillStyle = `rgba(245,240,255,${a})`;
+      ctx.fillText(c.text, W / 2, y + 14);
+    });
+  }
+
+  // closing words
+  const ta = clamp((u - 3.6) / 1.6, 0, 1);
+  if (ta > 0) {
+    const cy = H * 0.64;
+    const rg = ctx.createRadialGradient(W / 2, cy, 0, W / 2, cy, W * .55);
+    rg.addColorStop(0, `rgba(6,7,24,${.75 * ta})`); rg.addColorStop(1, "rgba(6,7,24,0)");
+    ctx.fillStyle = rg; ctx.fillRect(0, cy - W * .55, W, W * 1.1);
+    ctx.textAlign = "center"; ctx.fillStyle = `rgba(245,240,255,${ta})`;
+    ctx.font = "500 60px 'Cormorant Garamond', Georgia, serif";
+    ctx.fillText(S.line1 || "", W / 2, cy - 10);
+    ctx.font = "italic 500 27px 'Cormorant Garamond', Georgia, serif";
+    ctx.fillStyle = `rgba(215,212,240,${ta * clamp((u - 4.4) / 1.4, 0, 1)})`;
+    wrapText(S.line2 || "", W * .72).forEach((l, i) => ctx.fillText(l, W / 2, cy + 40 + i * 33));
+  }
+}
+
+// ---------- music: generated ambient pad + a chime for every new star ----------
+let audio = null, musicOn = true;
+function initAudio() {
+  if (audio) { audio.ac.resume(); return audio; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+  const ac = new AC(), master = ac.createGain(), dest = ac.createMediaStreamDestination();
+  master.gain.value = 0;
+  const verb = ac.createConvolver(), len = ac.sampleRate * 4, ir = ac.createBuffer(2, len, ac.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  verb.buffer = ir;
+  const wet = ac.createGain(); wet.gain.value = .55;
+  const bus = ac.createBiquadFilter(); bus.type = "lowpass"; bus.frequency.value = 1600;
+  bus.connect(master); bus.connect(verb); verb.connect(wet); wet.connect(master);
+  master.connect(ac.destination); master.connect(dest);
+  audio = { ac, master, dest, bus, next: ac.currentTime + .1, bar: 0 };
+  return audio;
+}
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+const CHORDS = [[45, 57, 60, 64, 71], [41, 53, 57, 60, 67], [36, 48, 55, 60, 64], [43, 55, 59, 62, 69]];
+function tone(freq, start, dur, gain, type = "sine", attack = 1.6) {
+  const { ac, bus } = audio, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = freq; o.detune.value = (Math.random() - .5) * 8;
+  g.gain.setValueAtTime(0, start); g.gain.linearRampToValueAtTime(gain, start + attack); g.gain.exponentialRampToValueAtTime(.0001, start + dur);
+  o.connect(g); g.connect(bus); o.start(start); o.stop(start + dur + .1);
+}
+function chime(name, big) {
+  if (!audio || !musicOn) return;
+  const s = audio.ac.currentTime + .02, base = big ? 72 : 76 + Math.floor(hash(name) * 3) * 2;
+  (big ? [0, 4, 7, 12, 16] : [0, 7, 12]).forEach((iv, i) => tone(midi(base + iv), s + i * .14, big ? 5 : 3.2, big ? .06 : .05, "sine", .01));
+}
+function tickAudio(t) {
+  if (!audio) return;
+  const { ac, master } = audio;
+  const target = musicOn && playing ? .8 * clamp((tEnd() - t) / 3, 0, 1) : 0;
+  master.gain.setTargetAtTime(target, ac.currentTime, .4);
+  if (!musicOn || !playing) { audio.next = Math.max(audio.next, ac.currentTime + .1); return; }
+  while (audio.next < ac.currentTime + 1) {
+    const ch = CHORDS[audio.bar % CHORDS.length], s = audio.next;
+    ch.forEach((n, i) => tone(midi(n), s, 6.5, i === 0 ? .07 : .035, i === 0 ? "sine" : "triangle"));
+    for (let k = 0; k < 2; k++) if (Math.random() < .6) tone(midi(ch[1 + Math.floor(Math.random() * 4)] + 12), s + k * 2 + Math.random() * .4, 2.6, .025, "sine", .02);
+    audio.next += 4; audio.bar++;
+  }
+}
+
+// ---------- playback ----------
+const playBtn = document.getElementById("play"), scrub = document.getElementById("scrub"), clock = document.getElementById("clock");
+const recBtn = document.getElementById("record"), statusEl = document.getElementById("status"), preview = document.getElementById("preview");
+let t = Math.min(42, meEnd() - 1), playing = false, last = performance.now(), scrubbing = false, recorder = null;
+
+function setStatus(msg, cls) { statusEl.textContent = msg; statusEl.className = "status" + (cls ? " " + cls : ""); }
+function setPlaying(v) { playing = v; playBtn.textContent = v ? "❚❚" : "▶"; playBtn.setAttribute("aria-label", v ? "Pause" : "Play"); document.getElementById("screen").classList.toggle("playing", v); }
+playBtn.onclick = () => { if (recorder) return; initAudio(); if (!playing && t >= tEnd() - .01) t = TSTART; setPlaying(!playing); };
+document.getElementById("restart").onclick = () => { if (recorder) return; initAudio(); t = TSTART; setPlaying(true); };
+const musicBtn = document.getElementById("music");
+musicBtn.onclick = () => { musicOn = !musicOn; musicBtn.textContent = musicOn ? "♪ Music on" : "♪ Music off"; musicBtn.setAttribute("aria-pressed", musicOn); if (musicOn) initAudio(); };
+scrub.addEventListener("input", () => { if (recorder) return; scrubbing = true; t = +scrub.value; });
+scrub.addEventListener("change", () => { scrubbing = false; });
+
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  const prevT = t;
+  if (playing) { t += dt / (clamp(+S.secPerYear || .8, .2, 3) * paceAt(t)); if (t >= tEnd()) { t = tEnd(); setPlaying(false); if (recorder) recorder.stop(); } }
+  t = Math.min(t, tEnd());
+  simTo(t);
+  if (t > prevT && t - prevT < 1) for (const s of sim.stars) if (s.t0 > prevT && s.t0 <= t && t > TSTART) chime(s.e.name, s.e.isMe);
+  tickAudio(t); draw(t, now);
+  scrub.min = TSTART; scrub.max = tEnd(); if (!scrubbing) scrub.value = t;
+  const V = view(), age = Math.floor(clamp(t, 0, meEnd()));
+  const who = V.cast.find(c => c.role === "me").name;
+  clock.textContent = t < 0 ? `before ${who} is born · ${V.birth + Math.floor(t)}`
+    : t > V.aNow + 1 ? `${who} · the years ahead`
+    : `${who}, age ${age} · ${V.birth + age}${S.markFuture !== false && V.birth + age > NOW_YEAR ? " (imagined)" : ""}`;
+  requestAnimationFrame(frame);
+}
+
+// ---------- video export ----------
+// ask for the downloads capability at save time: window.claude may not exist yet when this script first runs
+async function getDownloads() {
+  for (let i = 0; i < 20 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 100));
+  if (!(window.claude && window.claude.use)) return null;
+  try { return await window.claude.use("downloads"); } catch (e) { return null; }
+}
+let lastVideo = null;
+async function offerSave() {
+  if (!lastVideo) return;
+  setStatus("Preparing the download…", "");
+  const dl = await getDownloads();
+  if (!dl) { // opened outside the claude.ai viewer: let the browser download the file itself
+    const a = document.createElement("a");
+    a.href = preview.src; a.download = "lifelines." + lastVideo.ext; document.body.append(a); a.click(); a.remove();
+    setStatus("Download started. If nothing appeared, right-click the video below and choose “Save video as…”.", "ok");
+    return;
+  }
+  try { await dl.save({ filename: "lifelines." + lastVideo.ext, data: lastVideo.blob }); setStatus("Video saved to your downloads.", "ok"); }
+  catch (e) {
+    const code = e && e.code || "error";
+    if (code === "declined") setStatus("Save cancelled. Click “Save video” to try again.", "");
+    else if (code === "rate_limited") setStatus("A save prompt is already open. Wait a moment, then click “Save video” again.", "");
+    else if (code === "too_large") setStatus("The video is too large for this app. Raise the speed (fewer seconds per year) and record again.", "err");
+    else setStatus(`Couldn't save the video (${code}). Click “Save video” to try again.`, "err");
+  }
+}
+recBtn.onclick = () => {
+  if (lastVideo && recBtn.dataset.mode === "save") { offerSave(); return; }
+  if (recorder) return;
+  if (!window.MediaRecorder || !cv.captureStream) { setStatus("This browser can't record video from the canvas. Try Chrome or Edge.", "err"); return; }
+  const au = musicOn ? initAudio() : null;
+  const types = au ? ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"] : ["video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp9", "video/webm"];
+  const type = types.find(x => MediaRecorder.isTypeSupported(x));
+  if (!type) { setStatus("This browser supports no video format for recording.", "err"); return; }
+  const chunks = [], stream = cv.captureStream(30);
+  if (au) au.dest.stream.getAudioTracks().forEach(tr => stream.addTrack(tr));
+  try { recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 5e6 }); }
+  catch (e) { recorder = null; setStatus("Recording couldn't start.", "err"); return; }
+  recorder.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: type.split(";")[0] });
+    lastVideo = { blob, ext: type.startsWith("video/mp4") ? "mp4" : "webm" };
+    recorder = null;
+    preview.src = URL.createObjectURL(blob); preview.hidden = false;
+    recBtn.textContent = "⬇ Save video"; recBtn.dataset.mode = "save"; recBtn.disabled = false;
+    setStatus(`Recorded (${(blob.size / 1048576).toFixed(1)} MB, ${lastVideo.ext.toUpperCase()}). Click “Save video” to download it.`, "ok");
+    recBtn.focus();
+  };
+  t = TSTART; sim = null; recorder.start(500); setPlaying(true);
+  recBtn.disabled = true; setStatus("Recording in real time. Keep this tab open and visible.", "");
+};
+function invalidateVideo() { if (recBtn.dataset.mode === "save") { recBtn.dataset.mode = ""; recBtn.textContent = "● Record video"; lastVideo = null; preview.hidden = true; } }
+
+// ---------- editor ----------
+const peopleEl = document.getElementById("people");
+const changed = () => { sim = null; VIEW = null; save(); invalidateVideo(); renderViewer(); updateDuration(); };
+const viewerSel = document.getElementById("viewer"), viewerNote = document.getElementById("viewerNote");
+function renderViewer() {
+  const G = familyGraph(), opts = S.people.filter(p => G.N.has(p.id));
+  if (!G.N.has(S.viewer)) S.viewer = "me";
+  viewerSel.replaceChildren(...opts.map(p => el("option", { value: p.id, textContent: `${(p.name || "").trim() || "?"} (${p.id === "me" ? "you" : REL_LABEL[p.role]})`, selected: p.id === S.viewer })));
+  const V = view();
+  if (V.vid === "me") { viewerNote.textContent = ""; return; }
+  const X = S.people.find(p => p.id === V.vid);
+  viewerNote.textContent = [
+    V.estimated ? `No birth year for ${X.name || "them"} yet, so it's guessed (${V.birth}). Add it on their card.` : "",
+    V.endFromDeath ? "" : `Their story ends at 85 (${V.birth + V.endAge}); a death year on their card changes that.`,
+    "Your friends stay out of their story, and the lines follow the family tree."
+  ].filter(Boolean).join(" ");
+}
+viewerSel.onchange = () => { S.viewer = viewerSel.value; changed(); t = Math.min(t, tEnd()); };
+function updateDuration() { const s = Math.round(videoSeconds()); document.getElementById("dur").textContent = `· video ≈ ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+const el = (tag, attrs = {}, kids = []) => { const n = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === "on") for (const [ev, fn] of Object.entries(v)) n.addEventListener(ev, fn); else if (k in n && k !== "list") n[k] = v; else n.setAttribute(k, v); } kids.forEach(c => c != null && c !== "" && n.append(c)); return n; };
+function moveTo(id, idx) { const i = S.people.findIndex(p => p.id === id); const [p] = S.people.splice(i, 1); S.people.splice(clamp(idx, 0, S.people.length), 0, p); changed(); }
+
+function yearField(label, p, key, ph) {
+  return el("label", { className: "f" }, [label, el("input", { type: "number", id: `${p.id}-${key}`, value: p[key] ?? "", placeholder: ph, inputMode: "numeric",
+    on: { input: ev => { p[key] = ev.target.value === "" ? "" : +ev.target.value; changed(); } } })]);
+}
+function ofField(p) {
+  const rel = p.role === "grandparent" ? "parent" : "child";
+  const opts = S.people.filter(q => q.role === rel);
+  if (!opts.length) return null;
+  return el("label", { className: "f" }, [p.role === "grandparent" ? "Parent of" : "Child of",
+    el("select", { id: `${p.id}-of`, on: { change: ev => { p.of = ev.target.value; changed(); } } },
+      opts.map(q => el("option", { value: q.id, textContent: q.name || "?", selected: (p.of || opts[0].id) === q.id })))]);
+}
+// a child's other parent: their line branches out of both of you
+function withField(p) {
+  const opts = by("partner"), cur = otherParent(p) || "none";
+  return el("label", { className: "f" }, ["Child with",
+    el("select", { id: `${p.id}-with`, on: { change: ev => { p.with = ev.target.value; changed(); } } }, [
+      ...opts.map(q => el("option", { value: q.id, textContent: q.name || "?", selected: cur === q.id })),
+      el("option", { value: "none", textContent: opts.length ? "Someone not on the list" : "No partner on the list", selected: cur === "none" })])]);
+}
+function estBorn(p) { const G = familyGraph(); return G.N.has(p.id) ? "≈" + G.bornOf(p.id) : ""; }
+function yearsFor(p) {
+  const r = p.role, born = () => yearField("Born", p, "born", estBorn(p));
+  if (r === "partner") return el("div", { className: "years four" }, [born(), yearField("Together", p, "from", "always"), yearField("Parted", p, "to", "stays"), yearField("Died", p, "death", "—")]);
+  if (r === "parent" || r === "grandparent" || r === "sibling") return el("div", { className: "years" }, [born(), yearField("Left", p, "to", "stays"), yearField("Died", p, "death", "—")]);
+  if (r === "child" || r === "grandchild") return el("div", { className: "years" }, [yearField("Born", p, "from", "year"), yearField("Left", p, "to", "stays"), yearField("Died", p, "death", "—")]);
+  return el("div", { className: "years" }, [yearField("Joined", p, "from", "from start"), yearField("Left", p, "to", "stays"), yearField("Died", p, "death", "—")]);
+}
+
+function startDrag(ev, card, id) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  const handle = ev.currentTarget;
+  try { handle.setPointerCapture(ev.pointerId); } catch (e) {}
+  card.classList.add("dragging");
+  const startY = ev.clientY, startTop = card.getBoundingClientRect().top;
+  const move = e => {
+    const others = [...peopleEl.children].filter(c => c !== card);
+    const mid = e.clientY - startY + startTop + card.offsetHeight / 2;
+    let idx = others.findIndex(c => { const r = c.getBoundingClientRect(); return mid < r.top + r.height / 2; });
+    if (idx < 0) idx = others.length;
+    if (idx !== [...peopleEl.children].indexOf(card)) {
+      peopleEl.insertBefore(card, others[idx] || null);
+      moveTo(id, idx);
+    }
+  };
+  const up = () => { handle.removeEventListener("pointermove", move); handle.removeEventListener("pointerup", up); handle.removeEventListener("pointercancel", up); card.classList.remove("dragging"); render(); document.getElementById(`${id}-handle`)?.focus(); };
+  handle.addEventListener("pointermove", move); handle.addEventListener("pointerup", up); handle.addEventListener("pointercancel", up);
+}
+
+// one line per person: color, name, relationship and a small bar of when they are in your life
+let openId = null;
+function lifeSpan(p) {
+  if (p.id === "me") return [num(S.birth), num(S.end), !!S.meStar];
+  const start = p.role === "sibling" ? num(p.born) : num(p.from);
+  const death = num(p.death);
+  return [start, num(p.to) ?? death, death != null && (num(p.to) == null || death <= num(p.to))];
+}
+function summaryOf(p, col) {
+  const isMe = p.id === "me", b = num(S.birth) ?? 1985, lo = b - 2, hi = Math.max(num(S.end) ?? b + 85, lo + 10);
+  const [s, e, star] = lifeSpan(p), pct = y => clamp((y - lo) / (hi - lo) * 100, 0, 100);
+  const from = s == null ? 0 : pct(s), to = e == null ? 100 : pct(e);
+  const years = isMe ? `${s ?? "?"}–${e ?? ""}` : `${s ?? "…"}–${e ?? ""}`;
+  return [
+    el("span", { className: "dot", style: `background:${col};box-shadow:0 0 10px ${hexA(col, .7)}` }),
+    el("span", { className: "who" }, [el("b", { textContent: (p.name || "").trim() || "Unnamed" }), el("small", { textContent: isMe ? "you" : ROLES[p.role] || p.role })]),
+    el("span", { className: "span", "aria-hidden": "true" }, [el("i", { style: `left:${from}%;width:${Math.max(1.5, to - from)}%;background:${col}` }), star && e != null ? el("em", { style: `left:${to}%`, textContent: "✦" }) : null]),
+    el("span", { className: "yrs", textContent: years + (star && e != null ? " ✦" : "") + (!isMe && !star && num(p.death) != null ? ` · ✦${num(p.death)}` : "") }),
+    el("span", { className: "chev", "aria-hidden": "true", textContent: "›" })
+  ];
+}
+function render() {
+  peopleEl.replaceChildren();
+  S.people.forEach((p, i) => {
+    const isMe = p.id === "me", col = colorOf(p);
+    const jump = idx => () => { moveTo(p.id, idx); render(); };
+    const handle = el("div", { className: "handle", id: `${p.id}-handle`, tabIndex: 0, role: "button", textContent: "⠿", title: "Drag to reorder (or use arrow keys)", "aria-label": `Reorder ${p.name || "person"}` });
+    handle.addEventListener("keydown", ev => {
+      const d = { ArrowUp: -1, ArrowDown: 1 }[ev.key]; if (!d) return;
+      ev.preventDefault(); moveTo(p.id, i + d); render(); document.getElementById(`${p.id}-handle`).focus();
+    });
+    const swatch = el("span", { className: "swatch" }, [
+      el("input", { type: "color", id: `${p.id}-color`, value: col, title: isMe ? "Your color" : "Own color for this person (overrides the relationship color)",
+        on: { input: ev => { if (isMe) S.colors.me = ev.target.value; else p.color = ev.target.value; changed(); }, change: () => render() } }),
+      !isMe && p.color ? el("span", { className: "custom", title: "Custom color" }) : null
+    ]);
+    const top = el("div", { className: "row" }, [
+      swatch,
+      el("input", { type: "text", id: `${p.id}-name`, className: "grow", value: p.name, placeholder: "Name", "aria-label": "Name", on: { input: ev => { p.name = ev.target.value; changed(); } } }),
+      isMe ? el("span", { className: "note", style: "margin:0;white-space:nowrap" }, ["that's you"]) :
+        el("select", { id: `${p.id}-role`, className: "role", "aria-label": "Relationship", on: { change: ev => { p.role = ev.target.value; delete p.of; delete p.with; changed(); render(); } } },
+          Object.entries(ROLES).map(([v, l]) => el("option", { value: v, textContent: l, selected: p.role === v }))),
+      !isMe && p.color ? el("button", { type: "button", className: "icon", textContent: "◐", title: "Use the relationship color again", on: { click: () => { delete p.color; changed(); render(); } } }) : null,
+      el("button", { type: "button", className: "icon", textContent: "⤒", title: "Move to the top (far left)", disabled: i === 0, on: { click: jump(0) } }),
+      el("button", { type: "button", className: "icon", textContent: "⤓", title: "Move to the bottom (far right)", disabled: i === S.people.length - 1, on: { click: jump(S.people.length) } }),
+      isMe ? null : el("button", { type: "button", className: "icon", textContent: "×", title: "Remove", on: { click: () => { S.people.splice(i, 1); changed(); render(); } } })
+    ]);
+    const years = isMe
+      ? el("div", { className: "years" }, [
+          el("label", { className: "f" }, ["Born", el("input", { type: "number", id: "me-birth", value: S.birth, on: { input: ev => { S.birth = ev.target.value; changed(); } } })]),
+          el("label", { className: "f" }, ["Story ends", el("input", { type: "number", id: "me-end", value: S.end, on: { input: ev => { S.end = ev.target.value; changed(); } } })]),
+          el("label", { className: "check", style: "align-self:end;padding-bottom:6px" }, [el("input", { type: "checkbox", id: "me-star", checked: !!S.meStar, on: { change: ev => { S.meStar = ev.target.checked; changed(); } } }), "I become a star"])
+        ])
+      : yearsFor(p);
+    const open = openId === p.id;
+    const summary = el("button", { type: "button", className: "summary", id: `${p.id}-summary`, "aria-expanded": open, title: open ? "Close" : "Edit",
+      on: { click: () => { openId = open ? null : p.id; render(); document.getElementById(`${p.id}-summary`)?.focus(); } } }, summaryOf(p, col));
+    const body = el("div", { className: "body" }, open
+      ? [summary, top, years, (p.role === "grandparent" || p.role === "grandchild") ? ofField(p) : p.role === "child" ? withField(p) : null]
+      : [summary]);
+    const card = el("div", { className: "card" + (isMe ? " me" : "") + (open ? " open" : "") }, [handle, body]);
+    handle.addEventListener("pointerdown", ev => startDrag(ev, card, p.id));
+    peopleEl.append(card);
+  });
+}
+
+function renderPalette() {
+  const pal = document.getElementById("palette");
+  pal.replaceChildren(...[["me", "You"], ...Object.entries(ROLES)].map(([k, label]) =>
+    el("label", {}, [el("input", { type: "color", id: `color-${k}`, value: S.colors[k], on: { input: ev => { S.colors[k] = ev.target.value; changed(); }, change: () => render() } }), label])));
+}
+
+document.getElementById("arrange").onclick = () => { S.people = arrangeOrder(S.people); changed(); render(); };
+
+function addPerson(role, name, side) {
+  const b = num(S.birth) ?? 1985, nowY = new Date().getFullYear();
+  const born = { child: b + 30, grandchild: b + 58, partner: b + 25, friend: b + 10, sibling: b + 3 };
+  const p = { id: "p" + Date.now().toString(36), name, role, from: role === "parent" || role === "grandparent" ? "" : Math.min(nowY, born[role] ?? b + 10),
+    to: role === "friend" ? Math.min(nowY, b + 18) : "", death: "" };
+  const mi = S.people.findIndex(q => q.id === "me");
+  S.people.splice(side === "left" ? mi : mi + 1, 0, p); openId = p.id; changed(); render();
+  document.getElementById(`${p.id}-name`).select();
+}
+document.getElementById("addParent").onclick = () => addPerson("parent", "Parent", "right");
+document.getElementById("addGrand").onclick = () => addPerson("grandparent", "Grandparent", "left");
+document.getElementById("addSibling").onclick = () => addPerson("sibling", "Sibling", "right");
+document.getElementById("addPartner").onclick = () => addPerson("partner", "Partner", "left");
+document.getElementById("addChild").onclick = () => addPerson("child", "Child", "left");
+document.getElementById("addFriend").onclick = () => addPerson("friend", "Friend", "right");
+
+const speed = document.getElementById("speed"), line1 = document.getElementById("line1"), line2 = document.getElementById("line2");
+const lingerBox = document.getElementById("linger"), futureBox = document.getElementById("markFuture"), capBox = document.getElementById("captions");
+capBox.onchange = () => { S.captions = capBox.checked; save(); invalidateVideo(); };
+const closingSel = document.getElementById("closing");
+function syncClosing() {
+  const i = CLOSINGS.findIndex(([a, b]) => a === S.line1 && b === S.line2);
+  closingSel.replaceChildren(...CLOSINGS.map(([a, b], k) => el("option", { value: k, textContent: `${a} — ${b}`, selected: k === i })),
+    el("option", { value: "own", textContent: "Your own words", selected: i < 0 }));
+}
+closingSel.onchange = () => { const c = CLOSINGS[+closingSel.value]; if (!c) return; [S.line1, S.line2] = c; line1.value = c[0]; line2.value = c[1]; save(); invalidateVideo(); };
+function syncSettings() { syncClosing(); speed.value = S.secPerYear; line1.value = S.line1; line2.value = S.line2; lingerBox.checked = S.linger !== false; capBox.checked = S.captions !== false; futureBox.checked = S.markFuture !== false; }
+speed.oninput = () => { S.secPerYear = +speed.value; save(); invalidateVideo(); updateDuration(); };
+lingerBox.onchange = () => { S.linger = lingerBox.checked; save(); invalidateVideo(); updateDuration(); };
+futureBox.onchange = () => { S.markFuture = futureBox.checked; save(); invalidateVideo(); };
+line1.oninput = () => { S.line1 = line1.value; save(); invalidateVideo(); syncClosing(); };
+line2.oninput = () => { S.line2 = line2.value; save(); invalidateVideo(); syncClosing(); };
+document.getElementById("reset").onclick = () => { S = SAMPLE(); changed(); render(); renderPalette(); syncSettings(); };
+
+render(); renderPalette(); syncSettings(); renderViewer(); updateDuration();
+requestAnimationFrame(frame);
+window.renderAt = v => { t = v; setPlaying(false); simTo(t); draw(t, performance.now()); };
+if (document.fonts) document.fonts.ready.then(() => { sim = null; });
+})();
+</script>
+</body>
+</html>
