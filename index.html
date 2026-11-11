@@ -41,7 +41,7 @@ h1 em { color: var(--gold); font-style: italic; font-weight: 500; }
 .stage { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
 /* the preview is a player: play, scrub and the clock sit on its lower edge and step aside while it plays */
 .screen { position: relative; max-width: 100%; border-radius: 14px; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px #000; }
-canvas#sky { display: block; aspect-ratio: 9 / 16; height: min(calc(100vh - 215px), 1280px); max-width: 100%; border-radius: 14px; background: #070918; }
+canvas#sky { display: block; aspect-ratio: 9 / 16; height: min(calc(100vh - 255px), 1280px); max-width: 100%; border-radius: 14px; background: #070918; }
 .player { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 34px 14px 12px; border-radius: 0 0 14px 14px;
   background: linear-gradient(rgba(5,6,20,0), rgba(5,6,20,.88) 55%); transition: opacity .35s; }
 .player input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: var(--gold); }
@@ -118,79 +118,159 @@ input[type=color]::-moz-color-swatch { border-radius: 50%; border: none; }
 .summary .chev { color: var(--muted); font-size: 18px; transition: transform .2s; text-align: center; }
 .card.open .summary .chev { transform: rotate(90deg); }
 .card.open .summary { border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; padding-bottom: 10px; margin-bottom: 2px; }
+
+/* --- bilingual header, player, tabs --- */
+header { align-items: center; }
+.head-text { flex: 1 1 320px; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; padding: 3px; background: var(--panel); flex: none; }
+.lang button { border: 0; background: none; border-radius: 99px; padding: 5px 13px; font-size: 13px; color: var(--muted); }
+.lang button[aria-pressed=true] { background: var(--gold); color: #1d1606; font-weight: 600; }
+.screen { overflow: hidden; }
+canvas#sky { cursor: pointer; }
+.player { flex-direction: column; align-items: stretch; gap: 2px; padding: 44px 12px 10px; }
+.player .clock { max-width: none; padding-left: 4px; font-size: 13px; }
+.bar { display: flex; align-items: center; gap: 8px; }
+.track { position: relative; flex: 1 1 auto; min-width: 0; display: flex; align-items: center; height: 40px; }
+.track input[type=range] { width: 100%; margin: 0; }
+.marks { position: absolute; left: 8px; right: 8px; top: 0; height: 14px; pointer-events: none; }
+.marks button { all: unset; position: absolute; top: 0; width: 14px; height: 14px; margin-left: -7px; display: grid; place-items: center; cursor: pointer; pointer-events: auto; font-size: 10px; line-height: 1; border-radius: 50%; }
+.marks button::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.marks button.star::before { content: "✦"; width: auto; height: auto; background: none; color: var(--c); box-shadow: none; text-shadow: 0 0 6px var(--c); }
+.marks button.future { opacity: .5; }
+.marks button:hover { transform: scale(1.5); }
+.marks button:focus-visible { outline: 2px solid var(--gold); }
+#music.off { opacity: .5; text-decoration: line-through; }
+.bigplay { position: absolute; left: 50%; top: 66%; transform: translate(-50%, -50%); width: 78px; height: 78px; border-radius: 50%; padding: 0 0 0 5px; font-size: 26px;
+  color: var(--gold); background: rgba(10,12,34,.55); border: 1.5px solid var(--gold); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 9px rgba(244,196,106,.10), 0 0 50px rgba(244,196,106,.35); transition: transform .2s, opacity .25s; }
+.bigplay:hover { transform: translate(-50%, -50%) scale(1.07); }
+.screen.playing .bigplay { opacity: 0; pointer-events: none; }
+.screen:fullscreen { display: grid; place-items: center; background: #000; border-radius: 0; }
+.screen:fullscreen canvas#sky { height: 100vh; width: auto; max-width: 100vw; border-radius: 0; }
+.keys { text-align: center; margin: 0; width: min(100%, 540px); font-size: 12px; }
+@media (hover: none) { .keys { display: none; } }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #0c0e22; border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.tabs button { border: 0; background: none; color: var(--muted); border-radius: 9px; padding: 9px 10px; }
+.tabs button[aria-selected=true] { background: var(--panel-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.tab { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.add button { display: inline-flex; align-items: center; gap: 7px; border-radius: 99px; padding: 6px 12px 6px 10px; }
+.add button::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--muted)); box-shadow: 0 0 8px var(--c, transparent); }
+@media (max-width: 480px) { .summary { grid-template-columns: 12px minmax(0, 1fr) auto 12px; } .summary .span { display: none; } }
+details.how { border-top: 1px solid var(--line); padding-top: 14px; }
+details.how summary { cursor: pointer; color: var(--muted); font: 600 12px var(--ui); letter-spacing: .08em; text-transform: uppercase; }
+details.how .legend { margin-top: 10px; }
+button.armed { border-color: var(--rose); color: var(--rose); }
+.speedlab { display: flex; flex-wrap: wrap; gap: 0 6px; }
+@media (prefers-reduced-motion: reduce) { .bigplay, .player, .summary .chev { transition: none; } }
 </style>
 </head>
 <body>
-
 <header>
-  <h1>Life<em>lines</em></h1>
-  <p class="lede">Every colored line is one person in your life. Those who drift apart fade off to the side. Those who pass away rise into your sky as stars.</p>
+  <div class="head-text">
+    <h1>Life<em>lines</em></h1>
+    <p class="lede" data-i18n="lede">Every colored line is one person in your life. Those who drift apart fade off to the side. Those who pass away rise into your sky as stars.</p>
+  </div>
+  <div class="lang" role="group" aria-label="Jazyk / Language">
+    <button type="button" id="langCs" lang="cs" aria-pressed="false">Česky</button>
+    <button type="button" id="langEn" lang="en" aria-pressed="false">English</button>
+  </div>
 </header>
 
 <main class="app">
-  <section class="stage" aria-label="Animation preview">
+  <section class="stage" data-i18n-aria="stageAria">
     <div class="controls viewer">
-      <label for="viewer">Whose story</label>
+      <label for="viewer" data-i18n="whose">Whose story</label>
       <select id="viewer"></select>
     </div>
     <p id="viewerNote" class="note viewer-note"></p>
     <div class="screen" id="screen">
       <canvas id="sky" width="720" height="1280"></canvas>
+      <button id="bigplay" class="bigplay" type="button" data-i18n-aria="play">▶</button>
       <div class="player">
-        <button id="play" type="button" aria-label="Play">▶</button>
-        <input id="scrub" type="range" min="-2" max="100" step="0.05" value="0" aria-label="Scrub through time">
-        <span id="clock" class="clock">age 0</span>
+        <span id="clock" class="clock"></span>
+        <div class="bar">
+          <button id="play" type="button" aria-label="Play">▶</button>
+          <div class="track">
+            <div id="marks" class="marks"></div>
+            <input id="scrub" type="range" min="-2" max="100" step="0.05" value="0" data-i18n-aria="scrubAria">
+          </div>
+          <button id="music" type="button" aria-pressed="true">♪</button>
+          <button id="fs" type="button">⤢</button>
+        </div>
       </div>
     </div>
     <div class="actions">
       <button id="record" class="primary" type="button">● Record video</button>
-      <button id="restart" type="button">↺ From the start</button>
-      <button id="music" type="button" aria-pressed="true">♪ Music on</button>
+      <button id="restart" type="button" data-i18n="restart">↺ From the start</button>
     </div>
+    <p class="note keys" data-i18n="keys"></p>
     <div id="status" class="status" role="status"></div>
     <video id="preview" controls playsinline hidden></video>
   </section>
 
-  <aside class="editor" aria-label="People in the story">
-    <div>
-      <h2>People in your story <span class="sample">example</span></h2>
-      <p class="note">An example family. Replace it with your own people. Click a person to edit them. The list runs top to bottom = lines left to right; drag ⠿ to reorder.</p>
+  <aside class="editor" data-i18n-aria="editorAria">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabBtnPeople" aria-controls="tabPeople" aria-selected="true" data-i18n="tabPeople">People</button>
+      <button type="button" role="tab" id="tabBtnLook" aria-controls="tabLook" aria-selected="false" data-i18n="tabLook">Look &amp; words</button>
     </div>
-    <div class="tools">
-      <button id="arrange" type="button">Arrange as family tree</button>
+
+    <div id="tabPeople" class="tab" role="tabpanel" aria-labelledby="tabBtnPeople">
+      <div>
+        <h2><span data-i18n="peopleH">People in your story</span> <span id="sampleBadge" class="sample" data-i18n="example">example</span></h2>
+        <p id="sampleNote" class="note" data-i18n="sampleNote"></p>
+        <p class="note" data-i18n="peopleNote"></p>
+      </div>
+      <div id="people" class="people"></div>
+      <div class="tools add">
+        <button id="addParent" type="button" data-role="parent"></button>
+        <button id="addGrand" type="button" data-role="grandparent"></button>
+        <button id="addSibling" type="button" data-role="sibling"></button>
+        <button id="addPartner" type="button" data-role="partner"></button>
+        <button id="addChild" type="button" data-role="child"></button>
+        <button id="addFriend" type="button" data-role="friend"></button>
+      </div>
+      <div class="tools">
+        <button id="arrange" type="button" data-i18n="arrange">Arrange as family tree</button>
+      </div>
+      <details class="how">
+        <summary data-i18n="howH">How it works</summary>
+        <ul class="legend">
+          <li data-i18n-html="lg1"></li><li data-i18n-html="lg2"></li><li data-i18n-html="lg3"></li>
+          <li data-i18n-html="lg4"></li><li data-i18n-html="lg5"></li><li data-i18n-html="lg6"></li>
+        </ul>
+      </details>
+      <div class="section">
+        <h3 data-i18n="dataH">Your data</h3>
+        <p class="note" style="margin:0" data-i18n="dataNote"></p>
+        <div class="tools">
+          <button id="saveFile" type="button" data-i18n="saveFile"></button>
+          <button id="loadFile" type="button" data-i18n="loadFile"></button>
+          <input id="fileIn" type="file" accept="application/json,.json" hidden>
+          <button id="justMe" type="button" data-i18n="justMe"></button>
+          <button id="reset" type="button" data-i18n="reset"></button>
+        </div>
+        <div id="dataStatus" class="note" role="status" style="margin:0"></div>
+      </div>
     </div>
-    <div id="people" class="people"></div>
-    <div class="tools">
-      <button id="addParent" type="button">+ Parent</button>
-      <button id="addGrand" type="button">+ Grandparent</button>
-      <button id="addSibling" type="button">+ Sibling</button>
-      <button id="addPartner" type="button">+ Partner</button>
-      <button id="addChild" type="button">+ Child</button>
-      <button id="addFriend" type="button">+ Friend</button>
-    </div>
-    <ul class="legend">
-      <li><b>Joined</b>: the year they came into your life (empty = there from the start).</li>
-      <li><b>Left</b>: the year your paths parted. Their line drifts away.</li>
-      <li><b>Died</b>: they rise into the sky as a star.</li>
-      <li>A child's line grows out of both parents' lines. Pick the other parent under <b>Child with</b>.</li>
-      <li>Stars connect by kinship: children to both parents, partners to each other.</li>
-      <li><b>Whose story</b> (under the preview) tells the same family from anyone's point of view. Use real names so the labels work for everyone, and add birth years.</li>
-    </ul>
-    <div class="section">
-      <h3>Colors by relationship</h3>
-      <div id="palette" class="palette"></div>
-    </div>
-    <div class="section">
-      <label class="f">Speed (seconds per year) <span id="dur" style="text-transform:none;letter-spacing:0"></span>
-        <input id="speed" type="range" min="0.3" max="1.6" step="0.05" style="accent-color:var(--gold)">
-      </label>
-      <label class="check"><input type="checkbox" id="linger"> Slow down at big moments, speed through quiet years</label>
-      <label class="check"><input type="checkbox" id="captions"> Show captions for big moments (births, meetings, stars)</label>
-      <label class="check"><input type="checkbox" id="markFuture"> Show the years after today as imagined (dashed lines)</label>
-      <label class="f">Closing words<select id="closing"></select></label>
-      <label class="f">Closing title<input id="line1" type="text"></label>
-      <label class="f">Closing line<input id="line2" type="text"></label>
-      <button id="reset" type="button">Restore the example family</button>
+
+    <div id="tabLook" class="tab" role="tabpanel" aria-labelledby="tabBtnLook" hidden>
+      <div class="section" style="border-top:0;padding-top:0">
+        <h3 data-i18n="colorsH">Colors by relationship</h3>
+        <div id="palette" class="palette"></div>
+      </div>
+      <div class="section">
+        <label class="f"><span class="speedlab"><span data-i18n="speed"></span><span id="dur" style="text-transform:none;letter-spacing:0"></span></span>
+          <input id="speed" type="range" min="0.3" max="1.6" step="0.05" style="accent-color:var(--gold)">
+        </label>
+        <label class="check"><input type="checkbox" id="linger"> <span data-i18n="linger"></span></label>
+        <label class="check"><input type="checkbox" id="captions"> <span data-i18n="captions"></span></label>
+        <label class="check"><input type="checkbox" id="markFuture"> <span data-i18n="markFuture"></span></label>
+      </div>
+      <div class="section">
+        <label class="f"><span data-i18n="closingWords"></span><select id="closing"></select></label>
+        <label class="f"><span data-i18n="closingTitle"></span><input id="line1" type="text"></label>
+        <label class="f"><span data-i18n="closingLine"></span><input id="line2" type="text"></label>
+      </div>
     </div>
   </aside>
 </main>
@@ -200,27 +280,149 @@ input[type=color]::-moz-color-swatch { border-radius: 50%; border: none; }
 const W = 720, H = 1280, NOW_Y = Math.round(H * 0.47), PPY = H * 0.052, T0 = -14, STEP = 0.02, TSTART = -2; // the video opens two years before you are born
 const VIS = (H - NOW_Y) / PPY + 0.5, LEAVE_YEARS = 2.6, CAP_YEARS = 2.2;
 const STORE = "lifelines-v2";
-const ROLES = { grandparent: "Grandparent", parent: "Parent", sibling: "Sibling", partner: "Partner", child: "Child", grandchild: "Grandchild", friend: "Friend", other: "Other" };
+// ---------- language: Czech and English, switchable at any time ----------
+const LANG_STORE = "lifelines-lang";
+let lang = "";
+try { lang = localStorage.getItem(LANG_STORE) || ""; } catch (e) {}
+if (lang !== "cs" && lang !== "en") lang = /^(cs|sk)/i.test(navigator.language || "") ? "cs" : "en";
+const ROLE_KEYS = ["grandparent", "parent", "sibling", "partner", "child", "grandchild", "friend", "other"];
+const L = {
+  en: {
+    lede: "Every colored line is one person in your life. Those who drift apart fade off to the side. Those who pass away rise into your sky as stars.",
+    stageAria: "Animation preview", editorAria: "People and settings", whose: "Whose story", play: "Play", pause: "Pause", scrubAria: "Scrub through time",
+    record: "● Record video", saveVideo: "⬇ Save video", restart: "↺ From the start", musicOn: "Music on", musicOff: "Music off", fs: "Full screen",
+    keys: "Space plays and pauses · ← → move one year · dots on the timeline jump to the big moments",
+    tabPeople: "People", tabLook: "Look & words", peopleH: "People in your story", example: "example",
+    sampleNote: "This is an example family. Replace it with your own people, or start with just yourself.",
+    peopleNote: "Click a person to edit them. Top to bottom in the list is left to right in the sky; drag ⠿ to reorder.",
+    arrange: "Arrange as family tree", howH: "How it works",
+    lg1: "<b>Joined</b>: the year they came into your life (empty = there from the start).",
+    lg2: "<b>Left</b>: the year your paths parted. Their line drifts away.",
+    lg3: "<b>Died</b>: they rise into the sky as a star.",
+    lg4: "A child's line grows out of both parents' lines. Pick the other parent under <b>Child with</b>.",
+    lg5: "Stars connect by kinship: children to both parents, partners to each other.",
+    lg6: "<b>Whose story</b> (above the preview) tells the same family from anyone's point of view. Use real names so the labels work for everyone, and add birth years.",
+    colorsH: "Colors by relationship", speed: "Speed (seconds per year)",
+    linger: "Slow down at big moments, speed through quiet years",
+    captions: "Show captions for big moments (births, meetings, stars)",
+    markFuture: "Show the years after today as imagined (dashed lines)",
+    closingWords: "Closing words", closingTitle: "Closing title", closingLine: "Closing line", ownWords: "Your own words",
+    dataH: "Your data", dataNote: "Everything stays in this browser only. Save a file to keep a backup or to move your story to another device.",
+    saveFile: "Save to a file", loadFile: "Load from a file", justMe: "Start with just me", reset: "Restore the example family", sure: "Click again to confirm",
+    fileSaved: "Saved.", fileLoaded: "Loaded.", fileBad: "That file doesn't look like a Lifelines story.", fileFail: "Couldn't save the file.",
+    born: "Born", together: "Together", parted: "Parted", died: "Died", left: "Left", joined: "Joined",
+    phAlways: "always", phStays: "stays", phYear: "year", phStart: "from start",
+    parentOf: "Parent of", childOf: "Child of", childWith: "Child with", notListed: "Someone not on the list", noPartner: "No partner on the list",
+    unnamed: "Unnamed", you: "you", youCap: "You", me: "Me", name: "Name", thatsYou: "that's you", relationship: "Relationship",
+    dragTitle: "Drag to reorder (or use arrow keys)", yourColor: "Your color", ownColor: "Own color for this person (overrides the relationship color)",
+    customColor: "Custom color", resetColor: "Use the relationship color again", toTop: "Move to the top (far left)", toBottom: "Move to the bottom (far right)",
+    remove: "Remove", storyEnds: "Story ends", becomeStar: "I become a star", close: "Close", edit: "Edit",
+    role_grandparent: "Grandparent", role_parent: "Parent", role_sibling: "Sibling", role_partner: "Partner", role_child: "Child", role_grandchild: "Grandchild", role_friend: "Friend", role_other: "Other",
+    rel_grandparent: "grandparent", rel_parent: "parent", rel_sibling: "sibling", rel_partner: "partner", rel_child: "child", rel_grandchild: "grandchild", rel_friend: "friend", rel_other: "other", rel_ancestor: "great-grandparent", rel_relative: "relative",
+    capBorn: n => `${n} is born`, capMeet: n => `Meeting ${n}`, capPart: n => `Parting ways with ${n}`, capStar: n => `${n} becomes a star`,
+    today: "today", imagined: "imagined",
+    clockBefore: (who, y) => `before ${who} is born · ${y}`, clockAhead: who => `${who} · the years ahead`,
+    clockAge: (who, age, y, im) => `${who}, age ${age} · ${y}${im ? " (imagined)" : ""}`,
+    noteEst: (n, y) => `No birth year for ${n} yet, so it's guessed (${y}). Add it on their card.`,
+    noteEnd: y => `Their story ends at 85 (${y}); a death year on their card changes that.`,
+    noteFriends: "Your friends stay out of their story, and the lines follow the family tree.",
+    stPrep: "Preparing the download…",
+    stStarted: "Download started. If nothing appeared, right-click the video below and choose “Save video as…”.",
+    stSaved: "Video saved to your downloads.", stCancelled: "Save cancelled. Click “Save video” to try again.",
+    stBusy: "A save prompt is already open. Wait a moment, then click “Save video” again.",
+    stLarge: "The video is too large for this app. Raise the speed (fewer seconds per year) and record again.",
+    stFail: c => `Couldn't save the video (${c}). Click “Save video” to try again.`,
+    stNoRec: "This browser can't record video from the canvas. Try Chrome or Edge.",
+    stNoFmt: "This browser supports no video format for recording.", stNoStart: "Recording couldn't start.",
+    stDone: (mb, ext) => `Recorded (${mb} MB, ${ext}). Click “Save video” to download it.`,
+    stRec: "Recording in real time. Keep this tab open and visible."
+  },
+  cs: {
+    lede: "Každá barevná linka je jeden člověk ve tvém životě. Ti, se kterými se cesty rozejdou, se vytratí do strany. Ti, kteří odejdou navždy, vystoupají na tvou oblohu jako hvězdy.",
+    stageAria: "Náhled animace", editorAria: "Lidé a nastavení", whose: "Čí příběh", play: "Přehrát", pause: "Pozastavit", scrubAria: "Posun v čase",
+    record: "● Nahrát video", saveVideo: "⬇ Uložit video", restart: "↺ Od začátku", musicOn: "Hudba zapnutá", musicOff: "Hudba vypnutá", fs: "Celá obrazovka",
+    keys: "Mezerník přehrává a zastavuje · ← → posun o rok · tečky na časové ose skočí na velké okamžiky",
+    tabPeople: "Lidé", tabLook: "Vzhled a slova", peopleH: "Lidé ve tvém příběhu", example: "ukázka",
+    sampleNote: "Tohle je ukázková rodina. Nahraď ji svými lidmi, nebo začni jen od sebe.",
+    peopleNote: "Kliknutím člověka upravíš. Pořadí v seznamu shora dolů odpovídá linkám zleva doprava; přetažením ⠿ pořadí změníš.",
+    arrange: "Seřadit jako rodokmen", howH: "Jak to funguje",
+    lg1: "<b>Příchod</b>: rok, kdy ti vstoupili do života (prázdné = byli tu od začátku).",
+    lg2: "<b>Odchod</b>: rok, kdy se vaše cesty rozešly. Linka se vytratí do strany.",
+    lg3: "<b>Úmrtí</b>: vystoupají na oblohu jako hvězda.",
+    lg4: "Linka dítěte vyrůstá z linek obou rodičů. Druhého rodiče vybereš v poli <b>Dítě s</b>.",
+    lg5: "Hvězdy se spojují podle příbuzenství: děti s oběma rodiči, partneři spolu.",
+    lg6: "<b>Čí příběh</b> (nad náhledem) vypráví stejnou rodinu očima kohokoli z ní. Používej skutečná jména, ať popisky sedí všem, a doplň roky narození.",
+    colorsH: "Barvy podle vztahu", speed: "Rychlost (sekundy na rok)",
+    linger: "Zpomalit u velkých okamžiků, klidné roky projít rychleji",
+    captions: "Zobrazovat titulky velkých okamžiků (narození, setkání, hvězdy)",
+    markFuture: "Roky po dnešku ukázat jako představu (čárkované linky)",
+    closingWords: "Závěrečná slova", closingTitle: "Závěrečný nadpis", closingLine: "Závěrečná věta", ownWords: "Vlastní slova",
+    dataH: "Tvoje data", dataNote: "Všechno zůstává jen v tomto prohlížeči. Uložením do souboru získáš zálohu a příběh přeneseš i na jiné zařízení.",
+    saveFile: "Uložit do souboru", loadFile: "Načíst ze souboru", justMe: "Začít jen od sebe", reset: "Obnovit ukázkovou rodinu", sure: "Potvrď dalším kliknutím",
+    fileSaved: "Uloženo.", fileLoaded: "Načteno.", fileBad: "Tenhle soubor nevypadá jako příběh z Lifelines.", fileFail: "Soubor se nepodařilo uložit.",
+    born: "Narození", together: "Spolu od", parted: "Rozchod", died: "Úmrtí", left: "Odchod", joined: "Příchod",
+    phAlways: "odjakživa", phStays: "zůstává", phYear: "rok", phStart: "od začátku",
+    parentOf: "Je rodičem", childOf: "Je dítětem", childWith: "Dítě s", notListed: "Někdo mimo seznam", noPartner: "V seznamu není partner",
+    unnamed: "Beze jména", you: "ty", youCap: "Ty", me: "Já", name: "Jméno", thatsYou: "to jsi ty", relationship: "Vztah",
+    dragTitle: "Přetažením změníš pořadí (nebo šipkami)", yourColor: "Tvoje barva", ownColor: "Vlastní barva tohoto člověka (má přednost před barvou vztahu)",
+    customColor: "Vlastní barva", resetColor: "Vrátit barvu podle vztahu", toTop: "Přesunout nahoru (úplně vlevo)", toBottom: "Přesunout dolů (úplně vpravo)",
+    remove: "Odebrat", storyEnds: "Konec příběhu", becomeStar: "Stanu se hvězdou", close: "Zavřít", edit: "Upravit",
+    role_grandparent: "Prarodič", role_parent: "Rodič", role_sibling: "Sourozenec", role_partner: "Partner", role_child: "Dítě", role_grandchild: "Vnouče", role_friend: "Přítel", role_other: "Jiný",
+    rel_grandparent: "prarodič", rel_parent: "rodič", rel_sibling: "sourozenec", rel_partner: "partner", rel_child: "dítě", rel_grandchild: "vnouče", rel_friend: "přítel", rel_other: "jiný", rel_ancestor: "praprarodič", rel_relative: "příbuzný",
+    capBorn: n => `${n} přichází na svět`, capMeet: n => `Do života vstupuje ${n}`, capPart: n => `${n} odchází svou cestou`, capStar: n => `${n} se stává hvězdou`,
+    today: "dnes", imagined: "představa",
+    clockBefore: (who, y) => `${who} · před narozením · ${y}`, clockAhead: who => `${who} · roky, které přijdou`,
+    clockAge: (who, age, y, im) => `${who} · věk ${age} · ${y}${im ? " (představa)" : ""}`,
+    noteEst: (n, y) => `${n}: rok narození chybí, proto je odhadnutý (${y}). Doplň ho na kartě.`,
+    noteEnd: y => `Příběh končí v 85 letech (${y}); rok úmrtí na kartě to změní.`,
+    noteFriends: "Tvoji přátelé v tomhle příběhu nejsou a linky se řadí podle rodokmenu.",
+    stPrep: "Připravuji stažení…",
+    stStarted: "Stahování začalo. Pokud se nic neobjevilo, klikni na video níže pravým tlačítkem a zvol „Uložit video jako…“.",
+    stSaved: "Video je uložené ve stažených souborech.", stCancelled: "Uložení zrušeno. Kliknutím na „Uložit video“ to zkusíš znovu.",
+    stBusy: "Okno pro uložení je už otevřené. Chvíli počkej a klikni na „Uložit video“ znovu.",
+    stLarge: "Video je pro tuhle aplikaci příliš velké. Zvyš rychlost (méně sekund na rok) a nahraj ho znovu.",
+    stFail: c => `Video se nepodařilo uložit (${c}). Kliknutím na „Uložit video“ to zkusíš znovu.`,
+    stNoRec: "Tenhle prohlížeč neumí nahrávat video z plátna. Zkus Chrome nebo Edge.",
+    stNoFmt: "Tenhle prohlížeč nepodporuje žádný formát pro nahrávání.", stNoStart: "Nahrávání se nepodařilo spustit.",
+    stDone: (mb, ext) => `Nahráno (${mb} MB, ${ext}). Kliknutím na „Uložit video“ ho stáhneš.`,
+    stRec: "Nahrávám v reálném čase. Nech tuhle kartu otevřenou a viditelnou."
+  }
+};
+const T = (k, ...a) => { const v = L[lang][k] ?? L.en[k] ?? k; return typeof v === "function" ? v(...a) : v; };
+const SAMPLE_NAMES = {
+  en: { p1: "Grandma Rose", p2: "Grandpa Joe", p3: "Helen", p4: "First love", p5: "Anna", p6: "Leo", me: "Alex", p7: "Childhood friend", p8: "Grade school friend", p9: "College friend", p10: "Coworker", p11: "Peter" },
+  cs: { p1: "Babička Růžena", p2: "Děda Josef", p3: "Helena", p4: "První láska", p5: "Anna", p6: "Matěj", me: "Honza", p7: "Kamarád z dětství", p8: "Spolužák ze základky", p9: "Kamarád z vysoké", p10: "Kolega z práce", p11: "Petr" }
+};
 const DEFAULT_COLORS = { me: "#ffc247", grandparent: "#b9a6ff", parent: "#ff6b7d", sibling: "#ff9f5a", partner: "#ff8fd8", child: "#3fd6e0", grandchild: "#a6c8ff", friend: "#5fd39a", other: "#c9b37a" };
 // generation of each relationship, counted from you (grandparents -2 ... grandchildren +2)
 const ROLE_GEN = { ancestor: -3, grandparent: -2, parent: -1, sibling: 0, partner: 0, me: 0, child: 1, grandchild: 2 };
 const FAMILY = ["grandparent", "parent", "sibling", "partner", "child", "grandchild"];
-const REL_LABEL = { me: "you", ancestor: "great-grandparent", relative: "relative", ...Object.fromEntries(Object.entries(ROLES).map(([k, v]) => [k, v.toLowerCase()])) };
 const NOW_YEAR = new Date().getFullYear();
 
 // ready-made closing words; the title and line stay editable
-const CLOSINGS = [
-  ["They went on ahead", "Into the sky we are slowly walking toward, they light the way for us."],
-  ["Life is a journey", "Some walk with you for a while. Others stay in your sky forever."],
-  ["Only a little ahead", "They have only gone a little ahead. We follow, one quiet step at a time."],
-  ["Walking on before us", "Those we love walk on before us, into the sky we are slowly walking toward."],
-  ["Ahead of us, not gone", "Waiting where every path leads."],
-  ["They walk on ahead", "Gone to the place where we are slowly following."]
-];
+const CLOSINGS_ALL = {
+  en: [
+    ["They went on ahead", "Into the sky we are slowly walking toward, they light the way for us."],
+    ["Life is a journey", "Some walk with you for a while. Others stay in your sky forever."],
+    ["Only a little ahead", "They have only gone a little ahead. We follow, one quiet step at a time."],
+    ["Walking on before us", "Those we love walk on before us, into the sky we are slowly walking toward."],
+    ["Ahead of us, not gone", "Waiting where every path leads."],
+    ["They walk on ahead", "Gone to the place where we are slowly following."]
+  ],
+  cs: [
+    ["Šli napřed", "Na obloze, ke které pomalu jdeme, nám svítí na cestu."],
+    ["Život je cesta", "Někdo s tebou jde jen kus. Jiní zůstanou na tvé obloze navždy."],
+    ["Jen o kousek napřed", "Odešli jen o kousek napřed. Jdeme za nimi, krok za krokem."],
+    ["Jdou před námi", "Ti, které milujeme, jdou před námi k obloze, ke které pomalu míříme."],
+    ["Napřed, ne pryč", "Čekají tam, kam vedou všechny cesty."],
+    ["Jdou napřed", "Odešli tam, kam je pomalu následujeme."]
+  ]
+};
+const CLOSINGS = () => CLOSINGS_ALL[lang];
 const SAMPLE = () => ({
   birth: 1985, end: 2070, meStar: true, secPerYear: 0.8, viewer: "me", linger: true, markFuture: true,
-  line1: CLOSINGS[0][0],
-  line2: CLOSINGS[0][1],
+  line1: CLOSINGS()[0][0],
+  line2: CLOSINGS()[0][1],
   colors: { ...DEFAULT_COLORS },
   people: [
     { id: "p1", name: "Grandma Rose", role: "grandparent", of: "p3", born: 1931, from: "", to: "", death: 2000 },
@@ -235,7 +437,7 @@ const SAMPLE = () => ({
     { id: "p9", name: "College friend", role: "friend", from: 2005, to: 2009, death: "" },
     { id: "p10", name: "Coworker", role: "friend", from: 2011, to: 2014, death: "" },
     { id: "p11", name: "Peter", role: "parent", born: 1956, from: "", to: "", death: 2040 }
-  ]
+  ].map(p => ({ ...p, name: SAMPLE_NAMES[lang][p.id] }))
 });
 
 function loadState() {
@@ -247,7 +449,7 @@ function loadState() {
       return { ...s, birth: o.birth, end: o.end, meStar: o.meStar, secPerYear: o.secPerYear,
         people: o.people.map(p => p.id === "me" ? { id: "me", name: p.name || "Me", role: "me" } : {
           id: p.id, name: p.name, from: p.from, to: p.to, death: p.death,
-          role: p.role === "family" ? (/bab|d[ěe]d|grand|pra/i.test(p.name || "") ? "grandparent" : "parent") : (ROLES[p.role] ? p.role : "other") }) };
+          role: p.role === "family" ? (/bab|d[ěe]d|grand|pra/i.test(p.name || "") ? "grandparent" : "parent") : (ROLE_KEYS.includes(p.role) ? p.role : "other") }) };
     }
   } catch (e) {}
   return SAMPLE();
@@ -255,6 +457,16 @@ function loadState() {
 let S = loadState();
 S.colors = { ...DEFAULT_COLORS, ...(S.colors || {}) };
 const save = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} };
+// the example family and the ready-made closing words follow the language; anything the person typed themselves stays as it is
+function relocalize(from, to) {
+  if (from === to) return;
+  const hits = S.people.filter(p => SAMPLE_NAMES[from][p.id] && p.name === SAMPLE_NAMES[from][p.id]);
+  if (hits.length >= 6) for (const p of hits) p.name = SAMPLE_NAMES[to][p.id];
+  const i = CLOSINGS_ALL[from].findIndex(([a, b]) => a === S.line1 && b === S.line2);
+  if (i >= 0) [S.line1, S.line2] = CLOSINGS_ALL[to][i];
+}
+relocalize(lang === "cs" ? "en" : "cs", lang);
+const isSample = () => S.people.length === 12 && S.people.every(p => p.name === SAMPLE_NAMES[lang][p.id]);
 const roleColor = r => S.colors[{ ancestor: "grandparent", relative: "other" }[r] || r] || "#ffffff";
 const colorOf = p => p.id === "me" ? S.colors.me : (p.color || roleColor(p.role));
 
@@ -346,7 +558,7 @@ function buildView() {
     }
   }
   for (const c of cast) {
-    c.name = (c.p.name || "").trim() || (c.role === "me" ? "Me" : "?");
+    c.name = (c.p.name || "").trim() || (c.role === "me" ? T("me") : "?");
     c.color = c.role === "me" ? S.colors.me : (c.p.color || roleColor(c.role));
   }
   const ordered = vid === "me" ? cast : arrangeOrder(cast);
@@ -420,14 +632,14 @@ function makeSim() {
   for (const e of ents) e.parents = e.par.map(id => byId.get(id)).filter(Boolean);
   const meGen = ents[meOrder].gen ?? 0;
   for (const e of ents) e.band = e.gen == null ? null : clamp(e.gen - meGen + 3, 0, 6);
-  const sim = { ents, end, t: T0, stars: [], me: ents[meOrder], edges: V.edges, aNow: V.aNow, captions: [] };
-  const cap = (a, e, text) => { if (a != null && a >= TSTART && a < end) sim.captions.push({ t: a, year: String(Math.floor(b + a)), text, color: e.color }); };
+  const sim = { ents, end, birth: b, t: T0, stars: [], me: ents[meOrder], edges: V.edges, aNow: V.aNow, captions: [] };
+  const cap = (a, e, text, kind) => { if (a != null && a >= TSTART && a < end) sim.captions.push({ t: a, year: String(Math.floor(b + a)), text, color: e.color, kind }); };
   for (const e of ents) {
-    if (e.isMe) { cap(0, e, `${e.name} is born`); continue; }
-    if (e.a0 > 0 && ["child", "grandchild", "sibling", "relative"].includes(e.role)) cap(e.a0, e, `${e.name} is born`);
-    if (e.a0 > 0 && e.role === "partner") cap(e.a0, e, `Meeting ${e.name}`);
-    if (e.role === "partner") cap(e.aLeave, e, `Parting ways with ${e.name}`);
-    cap(e.aDeath, e, `${e.name} becomes a star`);
+    if (e.isMe) { cap(0, e, T("capBorn", e.name), "born"); continue; }
+    if (e.a0 > 0 && ["child", "grandchild", "sibling", "relative"].includes(e.role)) cap(e.a0, e, T("capBorn", e.name), "born");
+    if (e.a0 > 0 && e.role === "partner") cap(e.a0, e, T("capMeet", e.name), "meet");
+    if (e.role === "partner") cap(e.aLeave, e, T("capPart", e.name), "part");
+    cap(e.aDeath, e, T("capStar", e.name), "star");
   }
   sim.captions.sort((p, q) => p.t - q.t);
   for (const e of ents) {
@@ -504,6 +716,10 @@ const cv = document.getElementById("sky"), ctx = cv.getContext("2d");
 const bg = document.createElement("canvas"); bg.width = W; bg.height = H;
 const field = document.createElement("canvas"); field.width = W; field.height = H;
 const twinkles = [];
+const near = document.createElement("canvas"); near.width = W; near.height = H; // a few closer, brighter stars that drift faster: depth
+const vig = document.createElement("canvas"); vig.width = W; vig.height = H;
+const dust = []; // stardust shed by the living lines while the story plays
+const CALM = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 (function paintBackdrop() {
   const g = bg.getContext("2d");
   const lin = g.createLinearGradient(0, 0, 0, H);
@@ -522,6 +738,27 @@ const twinkles = [];
     f.beginPath(); f.arc(x, y, r, 0, 7); f.fill();
     if (i % 12 === 0) twinkles.push({ x, y, ph: rnd() * 6.28 });
   }
+  // the Milky Way: a soft diagonal river of faint stars that stays put while the nearer stars drift
+  g.save(); g.translate(W * .5, H * .3); g.rotate(-.5);
+  const mw = g.createLinearGradient(0, -200, 0, 200);
+  mw.addColorStop(0, "rgba(120,110,200,0)"); mw.addColorStop(.5, "rgba(150,135,225,.13)"); mw.addColorStop(1, "rgba(120,110,200,0)");
+  g.fillStyle = mw; g.fillRect(-W * 1.2, -200, W * 2.4, 400);
+  for (let i = 0; i < 1100; i++) {
+    const x = (rnd() - .5) * W * 2.2, y = (rnd() + rnd() + rnd() - 1.5) * 125;
+    g.fillStyle = `rgba(${rnd() < .25 ? "255,225,190" : "205,212,255"},${.06 + rnd() * .3})`;
+    g.fillRect(x, y, rnd() < .1 ? 1.6 : 1, 1);
+  }
+  g.restore();
+  const n2 = near.getContext("2d");
+  for (let i = 0; i < 44; i++) {
+    const r = .7 + rnd() * 1.1, x = 8 + rnd() * (W - 16), y = 8 + rnd() * (H - 16), c = ["255,236,205", "200,215,255", "255,255,255"][i % 3];
+    const rg = n2.createRadialGradient(x, y, 0, x, y, r * 4);
+    rg.addColorStop(0, `rgba(${c},.85)`); rg.addColorStop(.25, `rgba(${c},.32)`); rg.addColorStop(1, `rgba(${c},0)`);
+    n2.fillStyle = rg; n2.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
+  }
+  const v = vig.getContext("2d"), vg = v.createRadialGradient(W / 2, H * .46, H * .3, W / 2, H * .5, H * .8);
+  vg.addColorStop(0, "rgba(3,4,14,0)"); vg.addColorStop(1, "rgba(3,4,14,.6)");
+  v.fillStyle = vg; v.fillRect(0, 0, W, H);
 })();
 
 function glow(x, y, r, color, a) {
@@ -529,6 +766,7 @@ function glow(x, y, r, color, a) {
   g.addColorStop(0, hexA(color, a)); g.addColorStop(1, hexA(color, 0));
   ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
 }
+function ring(x, y, r, color, a) { ctx.strokeStyle = hexA(color, a); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke(); }
 function sparkle(x, y, r, color, a) {
   glow(x, y, r * 6, color, .28 * a);
   ctx.strokeStyle = hexA("#ffffff", .6 * a); ctx.lineWidth = 1;
@@ -567,6 +805,7 @@ function strokeLine(future, t, w = 1, a = 1) {
     ctx.globalAlpha = .7 * soft * a; ctx.lineWidth = 1.8 * Math.min(w, 1.2); ctx.stroke();
     ctx.setLineDash([]);
   } else {
+    if (a === 1) { ctx.globalAlpha = .05 * soft; ctx.lineWidth = 22 * w; ctx.stroke(); } // wide soft halo
     ctx.globalAlpha = (w > 1 ? .24 : .16) * soft * a; ctx.lineWidth = 8 * w; ctx.stroke();
     ctx.globalAlpha = soft * a; ctx.lineWidth = 2.2 * w; ctx.stroke();
   }
@@ -634,6 +873,27 @@ function draw(t, now) {
   const off = ((t * PPY * 0.08) % H + H) % H;
   ctx.drawImage(field, 0, off - H); ctx.drawImage(field, 0, off);
   for (const s of twinkles) { const a = .5 + .5 * Math.sin(now / 900 + s.ph); glow(s.x, (s.y + off) % H, 5, "#dfe3ff", .5 * a); }
+  const off2 = ((t * PPY * 0.2) % H + H) % H;
+  ctx.drawImage(near, 0, off2 - H); ctx.drawImage(near, 0, off2);
+  if (!CALM) { // now and then a shooting star crosses the upper sky
+    const k = Math.floor(now / 7000), ph = (now % 7000) / 900;
+    if (ph < 1 && hash("s" + k) < .6) {
+      const dir = hash("d" + k) < .5 ? -1 : 1, a = Math.sin(ph * Math.PI);
+      const sx = W * (.2 + hash("x" + k) * .6) + dir * 230 * ph, sy = H * (.04 + hash("y" + k) * .2) + 105 * ph;
+      const sg = ctx.createLinearGradient(sx, sy, sx - dir * 110, sy - 50);
+      sg.addColorStop(0, `rgba(255,255,255,${.85 * a})`); sg.addColorStop(1, "rgba(200,210,255,0)");
+      ctx.strokeStyle = sg; ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dir * 110, sy - 50); ctx.stroke();
+      glow(sx, sy, 7, "#ffffff", .7 * a);
+    }
+  }
+  // the year, large and faint at the foot of the sky; it dissolves after today like the ages do
+  if (t >= 0 && u < 1) {
+    const ya = clamp(1 - (t - sim.aNow) / 2.5, 0, 1) * clamp(1 - u, 0, 1) * clamp(t * 2, 0, 1);
+    if (ya > 0) {
+      ctx.font = "600 150px 'Cormorant Garamond', Georgia, serif"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = `rgba(190,188,240,${.1 * ya})`; ctx.fillText(String(Math.floor(sim.birth + t)), W / 2, H - 64);
+    }
+  }
 
   // age axis
   const axisA = clamp(1 - u / 2, 0, 1);
@@ -660,17 +920,19 @@ function draw(t, now) {
         ctx.strokeStyle = `rgba(244,196,106,${a})`; ctx.setLineDash([2, 6]); ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(W - 12, y); ctx.stroke(); ctx.setLineDash([]);
         ctx.font = "500 12px 'Instrument Sans', sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = `rgba(244,196,106,${a * 1.4})`;
-        ctx.fillText(`today · ${NOW_YEAR}`, W - 14, y - 9); ctx.textAlign = "left";
+        ctx.fillText(`${T("today")} · ${NOW_YEAR}`, W - 14, y - 9); ctx.textAlign = "left";
       }
       ctx.font = "italic 500 15px 'Cormorant Garamond', Georgia, serif"; ctx.fillStyle = `rgba(200,198,235,${.75 * axisA * clamp((t - aNow) * 2, 0, 1)})`;
-      ctx.fillText("imagined", 8, NOW_Y + 20);
+      ctx.fillText(T("imagined"), 8, NOW_Y + 20);
     }
   }
 
   // trails
   ctx.globalCompositeOperation = "lighter";
   for (const e of sim.ents) drawTrail(e, t);
+  for (const p of dust) glow(p.x, p.y, 4, p.c, .5 * (1 - p.life / p.max));
   ctx.globalCompositeOperation = "source-over";
+  ctx.drawImage(vig, 0, 0);
 
   // constellation by kinship, revealed outward from your own star
   const cProg = clamp((u - 2.6) / 2.6, 0, 1);
@@ -744,6 +1006,8 @@ function draw(t, now) {
       ctx.font = "500 14px 'Instrument Sans', sans-serif"; ctx.fillStyle = hexA("#e9e6ff", .8 * pos.p * (s.quiet ? .85 : 1));
       ctx.fillText(s.e.name, pos.x + 13, pos.y);
     }
+    const arr = t - s.t0 - (big ? 2.6 : 1.25); // a ring of light as the star settles into its place
+    if (!s.quiet && arr >= 0 && arr < 1.3) ring(pos.x, pos.y, (big ? 14 : 4) + (big ? 90 : 36) * Math.sqrt(arr / 1.3), s.e.color, .6 * (1 - arr / 1.3));
   }
 
   // heads + labels
@@ -752,7 +1016,9 @@ function draw(t, now) {
   const placed = [];
   for (const h of heads) {
     const k = weightOf(h.e), a = h.a * (k < 1 ? .75 : 1);
-    glow(h.x, NOW_Y, (h.e.isMe ? 26 : 16) * Math.min(k, 1.2), h.e.color, .9 * a);
+    const born = t - h.e.ht[0]; // a bloom of light where a new life begins
+    if (born < 1.4 && (h.e.fork || h.e.isMe) && h.e.ht[0] > T0 + 1) { const q = born / 1.4; ring(h.x, NOW_Y, 6 + 46 * Math.sqrt(q), h.e.color, .7 * (1 - q)); glow(h.x, NOW_Y, 46, h.e.color, .45 * (1 - q)); }
+    glow(h.x, NOW_Y, (h.e.isMe ? 28 + 5 * Math.sin(now / 520) : 16) * Math.min(k, 1.2), h.e.color, .9 * a);
     ctx.fillStyle = hexA("#ffffff", a); ctx.beginPath(); ctx.arc(h.x, NOW_Y, h.e.isMe ? 3.8 : 3 * Math.max(k, .8), 0, 7); ctx.fill();
     if (h.a < .35) continue;
     const w = ctx.measureText(h.e.name).width, lx = clamp(h.x, w / 2 + 40, W - w / 2 - 8);
@@ -779,6 +1045,24 @@ function draw(t, now) {
       ctx.font = "500 36px 'Cormorant Garamond', Georgia, serif"; ctx.fillStyle = `rgba(245,240,255,${a})`;
       ctx.fillText(c.text, W / 2, y + 14);
     });
+  }
+
+  // opening title: whose story this is
+  const ia = clamp(.4 - t, 0, 1) * clamp((t - TSTART) / .5 + .35, 0, 1);
+  if (ia > 0) {
+    const iy = H * .2, name = sim.me.name;
+    const ig = ctx.createRadialGradient(W / 2, iy + 60, 0, W / 2, iy + 60, W * .5);
+    ig.addColorStop(0, `rgba(6,7,24,${.7 * ia})`); ig.addColorStop(1, "rgba(6,7,24,0)");
+    ctx.fillStyle = ig; ctx.fillRect(0, iy - 200, W, 520);
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.font = "600 15px 'Instrument Sans', sans-serif"; ctx.fillStyle = hexA("#f4c46a", .9 * ia);
+    ctx.fillText("L I F E L I N E S", W / 2, iy);
+    ctx.font = "500 84px 'Cormorant Garamond', Georgia, serif";
+    const nw = ctx.measureText(name).width, fs = Math.min(84, 84 * W * .84 / Math.max(1, nw));
+    ctx.font = `500 ${fs}px 'Cormorant Garamond', Georgia, serif`; ctx.fillStyle = `rgba(245,240,255,${ia})`;
+    ctx.fillText(name, W / 2, iy + 90);
+    ctx.font = "italic 500 30px 'Cormorant Garamond', Georgia, serif"; ctx.fillStyle = `rgba(215,212,240,${.85 * ia})`;
+    ctx.fillText(String(sim.birth), W / 2, iy + 138);
   }
 
   // closing words
@@ -847,11 +1131,31 @@ const recBtn = document.getElementById("record"), statusEl = document.getElement
 let t = Math.min(42, meEnd() - 1), playing = false, last = performance.now(), scrubbing = false, recorder = null;
 
 function setStatus(msg, cls) { statusEl.textContent = msg; statusEl.className = "status" + (cls ? " " + cls : ""); }
-function setPlaying(v) { playing = v; playBtn.textContent = v ? "❚❚" : "▶"; playBtn.setAttribute("aria-label", v ? "Pause" : "Play"); document.getElementById("screen").classList.toggle("playing", v); }
+function setPlaying(v) { playing = v; playBtn.textContent = v ? "❚❚" : "▶"; playBtn.setAttribute("aria-label", T(v ? "pause" : "play")); document.getElementById("screen").classList.toggle("playing", v); }
 playBtn.onclick = () => { if (recorder) return; initAudio(); if (!playing && t >= tEnd() - .01) t = TSTART; setPlaying(!playing); };
 document.getElementById("restart").onclick = () => { if (recorder) return; initAudio(); t = TSTART; setPlaying(true); };
 const musicBtn = document.getElementById("music");
-musicBtn.onclick = () => { musicOn = !musicOn; musicBtn.textContent = musicOn ? "♪ Music on" : "♪ Music off"; musicBtn.setAttribute("aria-pressed", musicOn); if (musicOn) initAudio(); };
+const syncMusic = () => { const s = T(musicOn ? "musicOn" : "musicOff"); musicBtn.classList.toggle("off", !musicOn); musicBtn.title = s; musicBtn.setAttribute("aria-label", s); musicBtn.setAttribute("aria-pressed", musicOn); };
+musicBtn.onclick = () => { musicOn = !musicOn; syncMusic(); if (musicOn) initAudio(); };
+const screenEl = document.getElementById("screen"), fsBtn = document.getElementById("fs");
+cv.onclick = () => playBtn.click();
+document.getElementById("bigplay").onclick = () => playBtn.click();
+if (!document.fullscreenEnabled || !screenEl.requestFullscreen) fsBtn.hidden = true;
+fsBtn.onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else screenEl.requestFullscreen().catch(() => { fsBtn.hidden = true; }); };
+document.addEventListener("keydown", ev => {
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || (ev.target.closest && ev.target.closest("input, select, textarea, button, summary, video, [role=button]"))) return;
+  if (ev.key === " ") { ev.preventDefault(); playBtn.click(); }
+  else if ((ev.key === "ArrowRight" || ev.key === "ArrowLeft") && !recorder) { ev.preventDefault(); t = clamp(t + (ev.key === "ArrowRight" ? 1 : -1), TSTART, tEnd()); }
+});
+// the big moments as dots on the timeline; a click jumps just before the moment
+const marksEl = document.getElementById("marks"); let marksSig = "";
+function renderMarks() {
+  const span = tEnd() - TSTART, sig = lang + span + sim.captions.map(c => c.t + c.text + c.color).join("|");
+  if (sig === marksSig) return; marksSig = sig;
+  marksEl.replaceChildren(...sim.captions.map(c => el("button", { type: "button", className: (c.kind === "star" ? "star" : "") + (c.t > sim.aNow ? " future" : ""),
+    title: `${c.text} · ${c.year}`, "aria-label": `${c.text} · ${c.year}`, style: `left:${(c.t - TSTART) / span * 100}%;--c:${c.color}`,
+    on: { click: () => { if (!recorder) t = Math.max(TSTART, c.t - .6); } } })));
+}
 scrub.addEventListener("input", () => { if (recorder) return; scrubbing = true; t = +scrub.value; });
 scrub.addEventListener("change", () => { scrubbing = false; });
 
@@ -861,14 +1165,18 @@ function frame(now) {
   if (playing) { t += dt / (clamp(+S.secPerYear || .8, .2, 3) * paceAt(t)); if (t >= tEnd()) { t = tEnd(); setPlaying(false); if (recorder) recorder.stop(); } }
   t = Math.min(t, tEnd());
   simTo(t);
+  if (playing && !CALM) for (const e of sim.ents) if (e.spawned && !e.dead && !e.done && !e.leaving && e.hx.length && dust.length < 240 && Math.random() < dt * (e.isMe ? 16 : 6))
+    dust.push({ x: lastX(e), y: NOW_Y, vx: (Math.random() - .5) * 16, vy: 30 + Math.random() * 40, life: 0, max: .8 + Math.random() * .9, c: e.color });
+  for (let i = dust.length - 1; i >= 0; i--) { const p = dust[i]; p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.life >= p.max) dust.splice(i, 1); }
+  renderMarks();
   if (t > prevT && t - prevT < 1) for (const s of sim.stars) if (s.t0 > prevT && s.t0 <= t && t > TSTART) chime(s.e.name, s.e.isMe);
   tickAudio(t); draw(t, now);
   scrub.min = TSTART; scrub.max = tEnd(); if (!scrubbing) scrub.value = t;
   const V = view(), age = Math.floor(clamp(t, 0, meEnd()));
   const who = V.cast.find(c => c.role === "me").name;
-  clock.textContent = t < 0 ? `before ${who} is born · ${V.birth + Math.floor(t)}`
-    : t > V.aNow + 1 ? `${who} · the years ahead`
-    : `${who}, age ${age} · ${V.birth + age}${S.markFuture !== false && V.birth + age > NOW_YEAR ? " (imagined)" : ""}`;
+  clock.textContent = t < 0 ? T("clockBefore", who, V.birth + Math.floor(t))
+    : t > V.aNow + 1 ? T("clockAhead", who)
+    : T("clockAge", who, age, V.birth + age, S.markFuture !== false && V.birth + age > NOW_YEAR);
   requestAnimationFrame(frame);
 }
 
@@ -882,65 +1190,67 @@ async function getDownloads() {
 let lastVideo = null;
 async function offerSave() {
   if (!lastVideo) return;
-  setStatus("Preparing the download…", "");
+  setStatus(T("stPrep"), "");
   const dl = await getDownloads();
   if (!dl) { // opened outside the claude.ai viewer: let the browser download the file itself
     const a = document.createElement("a");
     a.href = preview.src; a.download = "lifelines." + lastVideo.ext; document.body.append(a); a.click(); a.remove();
-    setStatus("Download started. If nothing appeared, right-click the video below and choose “Save video as…”.", "ok");
+    setStatus(T("stStarted"), "ok");
     return;
   }
-  try { await dl.save({ filename: "lifelines." + lastVideo.ext, data: lastVideo.blob }); setStatus("Video saved to your downloads.", "ok"); }
+  try { await dl.save({ filename: "lifelines." + lastVideo.ext, data: lastVideo.blob }); setStatus(T("stSaved"), "ok"); }
   catch (e) {
     const code = e && e.code || "error";
-    if (code === "declined") setStatus("Save cancelled. Click “Save video” to try again.", "");
-    else if (code === "rate_limited") setStatus("A save prompt is already open. Wait a moment, then click “Save video” again.", "");
-    else if (code === "too_large") setStatus("The video is too large for this app. Raise the speed (fewer seconds per year) and record again.", "err");
-    else setStatus(`Couldn't save the video (${code}). Click “Save video” to try again.`, "err");
+    if (code === "declined") setStatus(T("stCancelled"), "");
+    else if (code === "rate_limited") setStatus(T("stBusy"), "");
+    else if (code === "too_large") setStatus(T("stLarge"), "err");
+    else setStatus(T("stFail", code), "err");
   }
 }
 recBtn.onclick = () => {
   if (lastVideo && recBtn.dataset.mode === "save") { offerSave(); return; }
   if (recorder) return;
-  if (!window.MediaRecorder || !cv.captureStream) { setStatus("This browser can't record video from the canvas. Try Chrome or Edge.", "err"); return; }
+  if (!window.MediaRecorder || !cv.captureStream) { setStatus(T("stNoRec"), "err"); return; }
   const au = musicOn ? initAudio() : null;
   const types = au ? ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"] : ["video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp9", "video/webm"];
   const type = types.find(x => MediaRecorder.isTypeSupported(x));
-  if (!type) { setStatus("This browser supports no video format for recording.", "err"); return; }
+  if (!type) { setStatus(T("stNoFmt"), "err"); return; }
   const chunks = [], stream = cv.captureStream(30);
   if (au) au.dest.stream.getAudioTracks().forEach(tr => stream.addTrack(tr));
   try { recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 5e6 }); }
-  catch (e) { recorder = null; setStatus("Recording couldn't start.", "err"); return; }
+  catch (e) { recorder = null; setStatus(T("stNoStart"), "err"); return; }
   recorder.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
   recorder.onstop = () => {
     const blob = new Blob(chunks, { type: type.split(";")[0] });
     lastVideo = { blob, ext: type.startsWith("video/mp4") ? "mp4" : "webm" };
     recorder = null;
     preview.src = URL.createObjectURL(blob); preview.hidden = false;
-    recBtn.textContent = "⬇ Save video"; recBtn.dataset.mode = "save"; recBtn.disabled = false;
-    setStatus(`Recorded (${(blob.size / 1048576).toFixed(1)} MB, ${lastVideo.ext.toUpperCase()}). Click “Save video” to download it.`, "ok");
+    recBtn.textContent = T("saveVideo"); recBtn.dataset.mode = "save"; recBtn.disabled = false;
+    setStatus(T("stDone", (blob.size / 1048576).toFixed(1), lastVideo.ext.toUpperCase()), "ok");
     recBtn.focus();
   };
-  t = TSTART; sim = null; recorder.start(500); setPlaying(true);
-  recBtn.disabled = true; setStatus("Recording in real time. Keep this tab open and visible.", "");
+  t = TSTART; sim = null; dust.length = 0; recorder.start(500); setPlaying(true);
+  recBtn.disabled = true; setStatus(T("stRec"), "");
 };
-function invalidateVideo() { if (recBtn.dataset.mode === "save") { recBtn.dataset.mode = ""; recBtn.textContent = "● Record video"; lastVideo = null; preview.hidden = true; } }
+function invalidateVideo() { if (recBtn.dataset.mode === "save") { recBtn.dataset.mode = ""; recBtn.textContent = T("record"); lastVideo = null; preview.hidden = true; } }
 
 // ---------- editor ----------
 const peopleEl = document.getElementById("people");
-const changed = () => { sim = null; VIEW = null; save(); invalidateVideo(); renderViewer(); updateDuration(); };
+const changed = () => { sim = null; VIEW = null; save(); invalidateVideo(); renderViewer(); updateDuration(); markSample(); tintAdd(); };
+function markSample() { const s = isSample(); document.getElementById("sampleBadge").hidden = !s; document.getElementById("sampleNote").hidden = !s; }
+function tintAdd() { for (const b of document.querySelectorAll(".add button")) b.style.setProperty("--c", S.colors[b.dataset.role]); }
 const viewerSel = document.getElementById("viewer"), viewerNote = document.getElementById("viewerNote");
 function renderViewer() {
   const G = familyGraph(), opts = S.people.filter(p => G.N.has(p.id));
   if (!G.N.has(S.viewer)) S.viewer = "me";
-  viewerSel.replaceChildren(...opts.map(p => el("option", { value: p.id, textContent: `${(p.name || "").trim() || "?"} (${p.id === "me" ? "you" : REL_LABEL[p.role]})`, selected: p.id === S.viewer })));
+  viewerSel.replaceChildren(...opts.map(p => el("option", { value: p.id, textContent: `${(p.name || "").trim() || "?"} (${p.id === "me" ? T("you") : T("rel_" + p.role)})`, selected: p.id === S.viewer })));
   const V = view();
   if (V.vid === "me") { viewerNote.textContent = ""; return; }
   const X = S.people.find(p => p.id === V.vid);
   viewerNote.textContent = [
-    V.estimated ? `No birth year for ${X.name || "them"} yet, so it's guessed (${V.birth}). Add it on their card.` : "",
-    V.endFromDeath ? "" : `Their story ends at 85 (${V.birth + V.endAge}); a death year on their card changes that.`,
-    "Your friends stay out of their story, and the lines follow the family tree."
+    V.estimated ? T("noteEst", X.name || "?", V.birth) : "",
+    V.endFromDeath ? "" : T("noteEnd", V.birth + V.endAge),
+    T("noteFriends")
   ].filter(Boolean).join(" ");
 }
 viewerSel.onchange = () => { S.viewer = viewerSel.value; changed(); t = Math.min(t, tEnd()); };
@@ -956,25 +1266,25 @@ function ofField(p) {
   const rel = p.role === "grandparent" ? "parent" : "child";
   const opts = S.people.filter(q => q.role === rel);
   if (!opts.length) return null;
-  return el("label", { className: "f" }, [p.role === "grandparent" ? "Parent of" : "Child of",
+  return el("label", { className: "f" }, [T(p.role === "grandparent" ? "parentOf" : "childOf"),
     el("select", { id: `${p.id}-of`, on: { change: ev => { p.of = ev.target.value; changed(); } } },
       opts.map(q => el("option", { value: q.id, textContent: q.name || "?", selected: (p.of || opts[0].id) === q.id })))]);
 }
 // a child's other parent: their line branches out of both of you
 function withField(p) {
   const opts = by("partner"), cur = otherParent(p) || "none";
-  return el("label", { className: "f" }, ["Child with",
+  return el("label", { className: "f" }, [T("childWith"),
     el("select", { id: `${p.id}-with`, on: { change: ev => { p.with = ev.target.value; changed(); } } }, [
       ...opts.map(q => el("option", { value: q.id, textContent: q.name || "?", selected: cur === q.id })),
-      el("option", { value: "none", textContent: opts.length ? "Someone not on the list" : "No partner on the list", selected: cur === "none" })])]);
+      el("option", { value: "none", textContent: T(opts.length ? "notListed" : "noPartner"), selected: cur === "none" })])]);
 }
 function estBorn(p) { const G = familyGraph(); return G.N.has(p.id) ? "≈" + G.bornOf(p.id) : ""; }
 function yearsFor(p) {
-  const r = p.role, born = () => yearField("Born", p, "born", estBorn(p));
-  if (r === "partner") return el("div", { className: "years four" }, [born(), yearField("Together", p, "from", "always"), yearField("Parted", p, "to", "stays"), yearField("Died", p, "death", "—")]);
-  if (r === "parent" || r === "grandparent" || r === "sibling") return el("div", { className: "years" }, [born(), yearField("Left", p, "to", "stays"), yearField("Died", p, "death", "—")]);
-  if (r === "child" || r === "grandchild") return el("div", { className: "years" }, [yearField("Born", p, "from", "year"), yearField("Left", p, "to", "stays"), yearField("Died", p, "death", "—")]);
-  return el("div", { className: "years" }, [yearField("Joined", p, "from", "from start"), yearField("Left", p, "to", "stays"), yearField("Died", p, "death", "—")]);
+  const r = p.role, born = () => yearField(T("born"), p, "born", estBorn(p));
+  if (r === "partner") return el("div", { className: "years four" }, [born(), yearField(T("together"), p, "from", T("phAlways")), yearField(T("parted"), p, "to", T("phStays")), yearField(T("died"), p, "death", "—")]);
+  if (r === "parent" || r === "grandparent" || r === "sibling") return el("div", { className: "years" }, [born(), yearField(T("left"), p, "to", T("phStays")), yearField(T("died"), p, "death", "—")]);
+  if (r === "child" || r === "grandchild") return el("div", { className: "years" }, [yearField(T("born"), p, "from", T("phYear")), yearField(T("left"), p, "to", T("phStays")), yearField(T("died"), p, "death", "—")]);
+  return el("div", { className: "years" }, [yearField(T("joined"), p, "from", T("phStart")), yearField(T("left"), p, "to", T("phStays")), yearField(T("died"), p, "death", "—")]);
 }
 
 function startDrag(ev, card, id) {
@@ -1013,7 +1323,7 @@ function summaryOf(p, col) {
   const years = isMe ? `${s ?? "?"}–${e ?? ""}` : `${s ?? "…"}–${e ?? ""}`;
   return [
     el("span", { className: "dot", style: `background:${col};box-shadow:0 0 10px ${hexA(col, .7)}` }),
-    el("span", { className: "who" }, [el("b", { textContent: (p.name || "").trim() || "Unnamed" }), el("small", { textContent: isMe ? "you" : ROLES[p.role] || p.role })]),
+    el("span", { className: "who" }, [el("b", { textContent: (p.name || "").trim() || T("unnamed") }), el("small", { textContent: isMe ? T("you") : T("role_" + p.role) })]),
     el("span", { className: "span", "aria-hidden": "true" }, [el("i", { style: `left:${from}%;width:${Math.max(1.5, to - from)}%;background:${col}` }), star && e != null ? el("em", { style: `left:${to}%`, textContent: "✦" }) : null]),
     el("span", { className: "yrs", textContent: years + (star && e != null ? " ✦" : "") + (!isMe && !star && num(p.death) != null ? ` · ✦${num(p.death)}` : "") }),
     el("span", { className: "chev", "aria-hidden": "true", textContent: "›" })
@@ -1024,36 +1334,36 @@ function render() {
   S.people.forEach((p, i) => {
     const isMe = p.id === "me", col = colorOf(p);
     const jump = idx => () => { moveTo(p.id, idx); render(); };
-    const handle = el("div", { className: "handle", id: `${p.id}-handle`, tabIndex: 0, role: "button", textContent: "⠿", title: "Drag to reorder (or use arrow keys)", "aria-label": `Reorder ${p.name || "person"}` });
+    const handle = el("div", { className: "handle", id: `${p.id}-handle`, tabIndex: 0, role: "button", textContent: "⠿", title: T("dragTitle"), "aria-label": T("dragTitle") });
     handle.addEventListener("keydown", ev => {
       const d = { ArrowUp: -1, ArrowDown: 1 }[ev.key]; if (!d) return;
       ev.preventDefault(); moveTo(p.id, i + d); render(); document.getElementById(`${p.id}-handle`).focus();
     });
     const swatch = el("span", { className: "swatch" }, [
-      el("input", { type: "color", id: `${p.id}-color`, value: col, title: isMe ? "Your color" : "Own color for this person (overrides the relationship color)",
+      el("input", { type: "color", id: `${p.id}-color`, value: col, title: T(isMe ? "yourColor" : "ownColor"),
         on: { input: ev => { if (isMe) S.colors.me = ev.target.value; else p.color = ev.target.value; changed(); }, change: () => render() } }),
-      !isMe && p.color ? el("span", { className: "custom", title: "Custom color" }) : null
+      !isMe && p.color ? el("span", { className: "custom", title: T("customColor") }) : null
     ]);
     const top = el("div", { className: "row" }, [
       swatch,
-      el("input", { type: "text", id: `${p.id}-name`, className: "grow", value: p.name, placeholder: "Name", "aria-label": "Name", on: { input: ev => { p.name = ev.target.value; changed(); } } }),
-      isMe ? el("span", { className: "note", style: "margin:0;white-space:nowrap" }, ["that's you"]) :
-        el("select", { id: `${p.id}-role`, className: "role", "aria-label": "Relationship", on: { change: ev => { p.role = ev.target.value; delete p.of; delete p.with; changed(); render(); } } },
-          Object.entries(ROLES).map(([v, l]) => el("option", { value: v, textContent: l, selected: p.role === v }))),
-      !isMe && p.color ? el("button", { type: "button", className: "icon", textContent: "◐", title: "Use the relationship color again", on: { click: () => { delete p.color; changed(); render(); } } }) : null,
-      el("button", { type: "button", className: "icon", textContent: "⤒", title: "Move to the top (far left)", disabled: i === 0, on: { click: jump(0) } }),
-      el("button", { type: "button", className: "icon", textContent: "⤓", title: "Move to the bottom (far right)", disabled: i === S.people.length - 1, on: { click: jump(S.people.length) } }),
-      isMe ? null : el("button", { type: "button", className: "icon", textContent: "×", title: "Remove", on: { click: () => { S.people.splice(i, 1); changed(); render(); } } })
+      el("input", { type: "text", id: `${p.id}-name`, className: "grow", value: p.name, placeholder: T("name"), "aria-label": T("name"), on: { input: ev => { p.name = ev.target.value; changed(); } } }),
+      isMe ? el("span", { className: "note", style: "margin:0;white-space:nowrap" }, [T("thatsYou")]) :
+        el("select", { id: `${p.id}-role`, className: "role", "aria-label": T("relationship"), on: { change: ev => { p.role = ev.target.value; delete p.of; delete p.with; changed(); render(); } } },
+          ROLE_KEYS.map(v => el("option", { value: v, textContent: T("role_" + v), selected: p.role === v }))),
+      !isMe && p.color ? el("button", { type: "button", className: "icon", textContent: "◐", title: T("resetColor"), on: { click: () => { delete p.color; changed(); render(); } } }) : null,
+      el("button", { type: "button", className: "icon", textContent: "⤒", title: T("toTop"), disabled: i === 0, on: { click: jump(0) } }),
+      el("button", { type: "button", className: "icon", textContent: "⤓", title: T("toBottom"), disabled: i === S.people.length - 1, on: { click: jump(S.people.length) } }),
+      isMe ? null : el("button", { type: "button", className: "icon", textContent: "×", title: T("remove"), on: { click: () => { S.people.splice(i, 1); changed(); render(); } } })
     ]);
     const years = isMe
       ? el("div", { className: "years" }, [
-          el("label", { className: "f" }, ["Born", el("input", { type: "number", id: "me-birth", value: S.birth, on: { input: ev => { S.birth = ev.target.value; changed(); } } })]),
-          el("label", { className: "f" }, ["Story ends", el("input", { type: "number", id: "me-end", value: S.end, on: { input: ev => { S.end = ev.target.value; changed(); } } })]),
-          el("label", { className: "check", style: "align-self:end;padding-bottom:6px" }, [el("input", { type: "checkbox", id: "me-star", checked: !!S.meStar, on: { change: ev => { S.meStar = ev.target.checked; changed(); } } }), "I become a star"])
+          el("label", { className: "f" }, [T("born"), el("input", { type: "number", id: "me-birth", value: S.birth, on: { input: ev => { S.birth = ev.target.value; changed(); } } })]),
+          el("label", { className: "f" }, [T("storyEnds"), el("input", { type: "number", id: "me-end", value: S.end, on: { input: ev => { S.end = ev.target.value; changed(); } } })]),
+          el("label", { className: "check", style: "align-self:end;padding-bottom:6px" }, [el("input", { type: "checkbox", id: "me-star", checked: !!S.meStar, on: { change: ev => { S.meStar = ev.target.checked; changed(); } } }), T("becomeStar")])
         ])
       : yearsFor(p);
     const open = openId === p.id;
-    const summary = el("button", { type: "button", className: "summary", id: `${p.id}-summary`, "aria-expanded": open, title: open ? "Close" : "Edit",
+    const summary = el("button", { type: "button", className: "summary", id: `${p.id}-summary`, "aria-expanded": open, title: T(open ? "close" : "edit"),
       on: { click: () => { openId = open ? null : p.id; render(); document.getElementById(`${p.id}-summary`)?.focus(); } } }, summaryOf(p, col));
     const body = el("div", { className: "body" }, open
       ? [summary, top, years, (p.role === "grandparent" || p.role === "grandchild") ? ofField(p) : p.role === "child" ? withField(p) : null]
@@ -1066,7 +1376,7 @@ function render() {
 
 function renderPalette() {
   const pal = document.getElementById("palette");
-  pal.replaceChildren(...[["me", "You"], ...Object.entries(ROLES)].map(([k, label]) =>
+  pal.replaceChildren(...["me", ...ROLE_KEYS].map(k => [k, T(k === "me" ? "youCap" : "role_" + k)]).map(([k, label]) =>
     el("label", {}, [el("input", { type: "color", id: `color-${k}`, value: S.colors[k], on: { input: ev => { S.colors[k] = ev.target.value; changed(); }, change: () => render() } }), label])));
 }
 
@@ -1081,32 +1391,101 @@ function addPerson(role, name, side) {
   S.people.splice(side === "left" ? mi : mi + 1, 0, p); openId = p.id; changed(); render();
   document.getElementById(`${p.id}-name`).select();
 }
-document.getElementById("addParent").onclick = () => addPerson("parent", "Parent", "right");
-document.getElementById("addGrand").onclick = () => addPerson("grandparent", "Grandparent", "left");
-document.getElementById("addSibling").onclick = () => addPerson("sibling", "Sibling", "right");
-document.getElementById("addPartner").onclick = () => addPerson("partner", "Partner", "left");
-document.getElementById("addChild").onclick = () => addPerson("child", "Child", "left");
-document.getElementById("addFriend").onclick = () => addPerson("friend", "Friend", "right");
+document.getElementById("addParent").onclick = () => addPerson("parent", T("role_parent"), "right");
+document.getElementById("addGrand").onclick = () => addPerson("grandparent", T("role_grandparent"), "left");
+document.getElementById("addSibling").onclick = () => addPerson("sibling", T("role_sibling"), "right");
+document.getElementById("addPartner").onclick = () => addPerson("partner", T("role_partner"), "left");
+document.getElementById("addChild").onclick = () => addPerson("child", T("role_child"), "left");
+document.getElementById("addFriend").onclick = () => addPerson("friend", T("role_friend"), "right");
 
 const speed = document.getElementById("speed"), line1 = document.getElementById("line1"), line2 = document.getElementById("line2");
 const lingerBox = document.getElementById("linger"), futureBox = document.getElementById("markFuture"), capBox = document.getElementById("captions");
 capBox.onchange = () => { S.captions = capBox.checked; save(); invalidateVideo(); };
 const closingSel = document.getElementById("closing");
 function syncClosing() {
-  const i = CLOSINGS.findIndex(([a, b]) => a === S.line1 && b === S.line2);
-  closingSel.replaceChildren(...CLOSINGS.map(([a, b], k) => el("option", { value: k, textContent: `${a} — ${b}`, selected: k === i })),
-    el("option", { value: "own", textContent: "Your own words", selected: i < 0 }));
+  const i = CLOSINGS().findIndex(([a, b]) => a === S.line1 && b === S.line2);
+  closingSel.replaceChildren(...CLOSINGS().map(([a, b], k) => el("option", { value: k, textContent: `${a} — ${b}`, selected: k === i })),
+    el("option", { value: "own", textContent: T("ownWords"), selected: i < 0 }));
 }
-closingSel.onchange = () => { const c = CLOSINGS[+closingSel.value]; if (!c) return; [S.line1, S.line2] = c; line1.value = c[0]; line2.value = c[1]; save(); invalidateVideo(); };
+closingSel.onchange = () => { const c = CLOSINGS()[+closingSel.value]; if (!c) return; [S.line1, S.line2] = c; line1.value = c[0]; line2.value = c[1]; save(); invalidateVideo(); };
 function syncSettings() { syncClosing(); speed.value = S.secPerYear; line1.value = S.line1; line2.value = S.line2; lingerBox.checked = S.linger !== false; capBox.checked = S.captions !== false; futureBox.checked = S.markFuture !== false; }
 speed.oninput = () => { S.secPerYear = +speed.value; save(); invalidateVideo(); updateDuration(); };
 lingerBox.onchange = () => { S.linger = lingerBox.checked; save(); invalidateVideo(); updateDuration(); };
 futureBox.onchange = () => { S.markFuture = futureBox.checked; save(); invalidateVideo(); };
 line1.oninput = () => { S.line1 = line1.value; save(); invalidateVideo(); syncClosing(); };
 line2.oninput = () => { S.line2 = line2.value; save(); invalidateVideo(); syncClosing(); };
-document.getElementById("reset").onclick = () => { S = SAMPLE(); changed(); render(); renderPalette(); syncSettings(); };
+// the viewer shows no confirm() dialogs, so anything that throws work away asks for a second click
+function twoStep(id, key, fn) {
+  const btn = document.getElementById(id); let armed = 0;
+  const disarm = () => { clearTimeout(armed); armed = 0; btn.textContent = T(key); btn.classList.remove("armed"); };
+  btn.onclick = () => { if (armed) { disarm(); fn(); } else { btn.textContent = T("sure"); btn.classList.add("armed"); armed = setTimeout(disarm, 4000); } };
+}
+twoStep("reset", "reset", () => { S = SAMPLE(); openId = null; changed(); render(); renderPalette(); syncSettings(); });
+twoStep("justMe", "justMe", () => { S.people = S.people.filter(p => p.id === "me"); S.viewer = "me"; openId = "me"; changed(); render(); });
 
-render(); renderPalette(); syncSettings(); renderViewer(); updateDuration();
+// backup: the story as a file
+const dataStatus = document.getElementById("dataStatus"), fileIn = document.getElementById("fileIn");
+document.getElementById("saveFile").onclick = async () => {
+  const blob = new Blob([JSON.stringify({ app: "lifelines", v: 2, state: S }, null, 1)], { type: "application/json" });
+  const dl = await getDownloads();
+  try {
+    if (dl) await dl.save({ filename: "lifelines.json", data: blob });
+    else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "lifelines.json"; document.body.append(a); a.click(); a.remove(); }
+    dataStatus.textContent = T("fileSaved");
+  } catch (e) { dataStatus.textContent = e && e.code === "declined" ? "" : T("fileFail"); }
+};
+document.getElementById("loadFile").onclick = () => fileIn.click();
+fileIn.onchange = () => {
+  const f = fileIn.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const o = JSON.parse(r.result), s = o && o.state || o;
+      if (!s || !Array.isArray(s.people) || !s.people.some(p => p && p.id === "me")) throw 0;
+      S = { ...SAMPLE(), ...s }; S.colors = { ...DEFAULT_COLORS, ...(s.colors || {}) }; openId = null;
+      changed(); render(); renderPalette(); syncSettings(); t = Math.min(t, tEnd());
+      dataStatus.textContent = T("fileLoaded");
+    } catch (e) { dataStatus.textContent = T("fileBad"); }
+    fileIn.value = "";
+  };
+  r.readAsText(f);
+};
+
+// tabs
+const TABS = { people: ["tabBtnPeople", "tabPeople"], look: ["tabBtnLook", "tabLook"] };
+function setTab(k) {
+  if (!TABS[k]) k = "people";
+  for (const [name, [b, p]] of Object.entries(TABS)) { document.getElementById(b).setAttribute("aria-selected", name === k); document.getElementById(p).hidden = name !== k; }
+  try { localStorage.setItem("lifelines-tab", k); } catch (e) {}
+}
+for (const [name, [b]] of Object.entries(TABS)) document.getElementById(b).onclick = () => setTab(name);
+
+// language
+function applyLang() {
+  document.documentElement.lang = lang;
+  for (const n of document.querySelectorAll("[data-i18n]")) n.textContent = T(n.dataset.i18n);
+  for (const n of document.querySelectorAll("[data-i18n-html]")) n.innerHTML = T(n.dataset.i18nHtml);
+  for (const n of document.querySelectorAll("[data-i18n-aria]")) n.setAttribute("aria-label", T(n.dataset.i18nAria));
+  for (const b of document.querySelectorAll(".add button")) b.textContent = "+ " + T("role_" + b.dataset.role);
+  document.getElementById("langCs").setAttribute("aria-pressed", lang === "cs");
+  document.getElementById("langEn").setAttribute("aria-pressed", lang === "en");
+  recBtn.textContent = T(recBtn.dataset.mode === "save" ? "saveVideo" : "record");
+  fsBtn.title = T("fs"); fsBtn.setAttribute("aria-label", T("fs"));
+  setPlaying(playing); syncMusic();
+  sim = null; VIEW = null;
+  render(); renderPalette(); syncSettings(); renderViewer(); updateDuration(); markSample(); tintAdd();
+}
+function setLang(l) {
+  if (l === lang) return;
+  const old = lang; lang = l;
+  try { localStorage.setItem(LANG_STORE, l); } catch (e) {}
+  relocalize(old, l); save(); setStatus("", ""); dataStatus.textContent = ""; applyLang();
+}
+document.getElementById("langCs").onclick = () => setLang("cs");
+document.getElementById("langEn").onclick = () => setLang("en");
+
+let startTab = "people"; try { startTab = localStorage.getItem("lifelines-tab") || "people"; } catch (e) {}
+setTab(startTab); applyLang();
 requestAnimationFrame(frame);
 window.renderAt = v => { t = v; setPlaying(false); simTo(t); draw(t, performance.now()); };
 if (document.fonts) document.fonts.ready.then(() => { sim = null; });

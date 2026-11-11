@@ -2,6 +2,8 @@
 
 Turn the people in your life into a short animated video. Every colored line is one person. Those who drift apart fade off to the side. Those who pass away rise into your sky as stars, and at the end they form a constellation of your family.
 
+The page is in Czech and English (Česky / English switch in the top right corner).
+
 Everything runs in one file, `index.html`, in the browser. There is no server and no build step. Your people are saved only in your own browser.
 
 ## Use it
@@ -21,4 +23,6 @@ Open `index.html` in Chrome or Edge, or publish the repo with GitHub Pages.
 - **The future is imagined.** Years after today are drawn as dashed lines, and the age fades out, so the video never says when the story will end.
 - **Pacing and captions.** Time slows at big moments (births, meetings, partings, deaths) and speeds through quiet years, with a short caption for each moment.
 - **Closing words.** Choose from several closing lines or write your own.
+- **Timeline and shortcuts.** Dots on the timeline jump to the big moments; Space plays and pauses, the arrow keys move one year.
+- **Backup.** Save your story to a file and load it again on another device.
 - **Music.** Generated ambient music with a soft chime for every new star.
